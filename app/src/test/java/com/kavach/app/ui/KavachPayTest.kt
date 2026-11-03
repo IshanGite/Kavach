@@ -25,6 +25,7 @@ import java.time.ZoneId
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
+import kotlin.test.assertNotEquals
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
@@ -66,6 +67,25 @@ class KavachPayTest {
         assertEquals("Kavach Pay (demo payment app)", KavachPay.NAV_LABEL)
         assertEquals("DEMO: no real money", KavachPay.DEMO_BANNER)
         assertEquals("Payment simulated, no money moved", KavachPay.SUCCESS_TEXT)
+    }
+
+    @Test
+    fun `rupee text and transaction ids are display-only`() {
+        assertEquals("₹500", KavachPay.formatRupees(500.0))
+        assertEquals("₹1,000", KavachPay.formatRupees(1_000.0))
+        assertEquals("₹1,500.50", KavachPay.formatRupees(1_500.5))
+        assertEquals("₹24,680.50", KavachPay.formatRupees(24_680.5))
+        assertEquals("₹50,000", KavachPay.formatRupees(50_000.0))
+        assertEquals("₹1,00,000", KavachPay.formatRupees(100_000.0))
+        assertEquals("₹12,34,567", KavachPay.formatRupees(12_34_567.0))
+
+        val id = KavachPay.transactionId(1_700_000_000_000)
+        assertEquals(id, KavachPay.transactionId(1_700_000_000_000))
+        assertEquals(10, id.length)
+        assertTrue(id.startsWith("KP"))
+        assertTrue(id.drop(2).all { it.isDigit() || it in 'A'..'Z' })
+        assertFalse(id.contains("@"))
+        assertNotEquals(id, KavachPay.transactionId(1_700_000_000_001))
     }
 
     @Test

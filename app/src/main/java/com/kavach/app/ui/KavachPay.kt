@@ -135,9 +135,32 @@ object KavachPay {
         return t
     }
 
-    fun formatRupees(amount: Double): String =
-        if (amount % 1.0 == 0.0) "₹${amount.toLong()}"
-        else "₹${String.format(Locale.US, "%.2f", amount)}"
+    fun formatRupees(amount: Double): String {
+        val sign = if (amount < 0.0) "-" else ""
+        val abs = if (amount < 0.0) -amount else amount
+        val raw = if (abs % 1.0 == 0.0) abs.toLong().toString() else String.format(Locale.US, "%.2f", abs)
+        val dot = raw.indexOf('.')
+        val whole = if (dot < 0) raw else raw.substring(0, dot)
+        val frac = if (dot < 0) "" else raw.substring(dot)
+        return sign + "₹" + groupIndianDigits(whole) + frac
+    }
+
+    /**
+     * Display-only reference for one simulated payment. Derived from the completion time,
+     * so the success screen and History agree. It is not a bank id and carries no payee, note, or PIN.
+     */
+    fun transactionId(atMs: Long): String {
+        val body = atMs.coerceAtLeast(0L).toString(36).uppercase().padStart(8, '0').takeLast(8)
+        return "KP$body"
+    }
+
+    private fun groupIndianDigits(digits: String): String {
+        if (digits.length <= 3) return digits
+        val tail = digits.takeLast(3)
+        val head = digits.dropLast(3)
+        val groupedHead = head.reversed().chunked(2).joinToString(",").reversed()
+        return "$groupedHead,$tail"
+    }
 }
 
 enum class RolePlay { NORMAL, COERCED }
