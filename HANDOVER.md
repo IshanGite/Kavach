@@ -153,3 +153,5 @@ adb logcat | grep -i kavach     # the app has no logcat output by design; use De
 adb reverse tcp:11434 tcp:11434 # phone uses the laptop's Ollama
 adb forward tcp:8765 tcp:8765   # laptop companion -> phone, over USB
 ```
+
+- **2026-11-03 (Om + Claude):** First run on devices. OnePlus 7 Pro (Android 12) + Android 14 emulator: Simulate pause screen works, accessibility sees GPay open, Vosk on-device ASR (en-in+hi) heard an ElevenLabs voice and scored L~90 -> nudge, laptop Whisper companion handled Hinglish (L=84), gemma3:4b reachable via `adb reverse` (cold start 38 s, warm ~5 s). Added: Call 1930 button on pause, Vosk ASR, TRAI-series caller rule, call-screening caller ID, sim-clock fix (pause timer froze after Simulate ended). Branch `feat/om-helpline-vosk-asr`, not pushed. **Still unverified:** real call mic/number, GPay amount+payee parse (no SIM/bank on this phone), guardian SMS, Hindi TTS. SIM-tester package: D:/Kavach-dist (APK, Vosk models, sample voices, TESTER_GUIDE.md).
