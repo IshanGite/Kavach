@@ -20,13 +20,38 @@ import kotlinx.coroutines.flow.collect
 
 data class LogEntry(val atMs: Long, val kind: String, val text: String)
 
+/**
+ * The configured model may not be what is installed (e.g. a phone with only gemma3:1b but a saved gemma3:4b). Ask the local Ollama what
+ * it has and use the configured model if present, else the first gemma, else the first model. Cached for 30 s, loopback only.
+ */
+private object ModelResolver {
+    @Volatile var at = 0L
+    @Volatile var key = ""
+    @Volatile var value = ""
+}
+
+internal fun resolveModel(url: String, configured: String): String {
+    val now = System.currentTimeMillis()
+    val k = "$url|$configured"
+    if (ModelResolver.key == k && now - ModelResolver.at < 30_000) return ModelResolver.value
+    var out = configured
+    try {
+        val c = java.net.URL(url.trimEnd('/') + "/api/tags").openConnection() as java.net.HttpURLConnection
+        c.connectTimeout = 1_500; c.readTimeout = 1_500
+        val names = Regex("\"name\"\\s*:\\s*\"([^\"]+)\"").findAll(c.inputStream.bufferedReader().readText()).map { it.groupValues[1] }.toList()
+        if (names.isNotEmpty() && configured !in names) out = names.firstOrNull { it.startsWith("gemma") } ?: names.first()
+    } catch (_: Exception) { /* unreachable: keep the configured name, the caller reports the failure */ }
+    ModelResolver.key = k; ModelResolver.at = now; ModelResolver.value = out
+    return out
+}
+
 /** Reads settings on every call, so changing the model, URL or cloud toggle takes effect immediately. */
 class DynamicLlmClient(private val settings: Settings, private val status: MutableStateFlow<String>) : LlmClient {
     override val name = "dynamic"
 
     override suspend fun analyze(req: LlmRequest): LlmResponse {
         val s = settings.state.value
-        val local = OllamaClient(s.ollamaUrl, s.ollamaModel, timeoutMs = s.llmTimeoutMs.toInt() + 2_000)
+        val local = OllamaClient(s.ollamaUrl, resolveModel(s.ollamaUrl, s.ollamaModel), timeoutMs = s.llmTimeoutMs.toInt() + 2_000)
         val cloud = s.cloudApiKey.takeIf { it.isNotBlank() }?.let { CloudClient(it) }
         val routing = RoutingClient(local, cloud, { settings.state.value.cloudEnabled }, s.llmTimeoutMs)
         return try {
