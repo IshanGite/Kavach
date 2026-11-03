@@ -217,6 +217,7 @@ class KavachService : Service() {
         }
         if (c.settings.state.value.companionEnabled) c.companion.start()
         c.widget.start()
+        c.voip.start()
         // After the foreground start, so this process is allowed to start Termux's service. Never blocks.
         try {
             c.ollamaAutostart.onProtectionOn(c.settings.state.value.ollamaUrl)
@@ -230,7 +231,7 @@ class KavachService : Service() {
 
     override fun onDestroy() {
         val c = container()
-        c.audio.stop(); c.companion.stop(); c.widget.stop(); c.overlay.dismiss()
+        c.voip.stop(); c.audio.stop(); c.companion.stop(); c.widget.stop(); c.overlay.dismiss()
         c.live.note("Protection OFF")
         super.onDestroy()
     }

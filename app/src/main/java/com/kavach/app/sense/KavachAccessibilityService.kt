@@ -58,13 +58,14 @@ class KavachAccessibilityService : AccessibilityService() {
         val remoteName = c.appConfig.remoteAccessName(pkg)
         val voipName = c.appConfig.voipName(pkg)
 
+        if (voipName != null) c.voip.noteForeground(voipName)
         if (remoteName != null && isWindowChange) onRemoteAccess(remoteName)
 
         when {
             payName != null -> onPaymentWindow(pkg, payName)
             voipName != null -> {
                 val now = System.currentTimeMillis()
-                if (now - lastParseMs > 800) { lastParseMs = now; c.voip.onScreen(pkg, voipName, collectTexts(rootInActiveWindow)) }
+                if (now - lastParseMs > 800) { lastParseMs = now; c.voip.onScreen(voipName, collectTexts(rootInActiveWindow)) }
                 if (isWindowChange) onLeftPaymentApp(pkg)
             }
             isWindowChange -> onLeftPaymentApp(pkg)

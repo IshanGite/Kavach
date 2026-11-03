@@ -22,7 +22,9 @@
     { "package": "com.whatsapp", "name": "WhatsApp" },
     { "package": "com.skype.raider", "name": "Skype" },
     { "package": "org.telegram.messenger", "name": "Telegram" },
-    { "package": "com.instagram.android", "name": "Instagram" }
+    { "package": "com.instagram.android", "name": "Instagram" },
+    { "package": "com.google.android.apps.tachyon", "name": "Google Meet" },
+    { "package": "com.facebook.orca", "name": "Messenger" }
   ],
   "pin_screen_hints": ["enter upi pin", "enter your upi pin", "upi pin", "यूपीआई पिन"]
 }
