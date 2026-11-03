@@ -259,8 +259,11 @@ fun KavachPayScreen() {
         KavachPayLedger.add(
             SimulatedPayment(current.pay.label, current.pay.upiId, current.pay.amountRupees, current.pay.note, at),
         )
-        live.scope.launch {
-            live.orchestrator.recordCompletedPayment(current.pay.upiId, current.pay.amountRupees, at)
+        // Only saved contacts teach the baseline. A new payee (the coerced demo account) must stay "new" so a judge can re-run it.
+        if (KavachPay.savedPayees.any { it.upiId == current.pay.upiId }) {
+            live.scope.launch {
+                live.orchestrator.recordCompletedPayment(current.pay.upiId, current.pay.amountRupees, at)
+            }
         }
         live.emit(PaymentDismissed(at))
         step = PayStep.SUCCESS

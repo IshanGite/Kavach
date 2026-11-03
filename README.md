@@ -20,7 +20,7 @@ The user can always proceed. Kavach never blocks a payment; it breaks the scamme
 | Part | State |
 |---|---|
 | `core`: events, risk fusion, orchestrator, LLM routing (Ollama + cloud), keyword analyst, guardian, report, simulator | built, tested, evaluated |
-| Eval suite: 32 scenarios (18 scam / 14 normal), fuzzed safety invariants, security gates | passing in CI |
+| Eval suite: 61 scenarios (34 scam / 27 normal), fuzzed safety invariants, security gates | passing in CI |
 | `app`: Android sensors, overlay, TTS, SMS, PDF, Simulate backup demo, Day-0 audio test | built, APK + lint green, **not yet run on a device** |
 | Speech-to-text (whisper.cpp) and on-phone Ollama | next (see `HANDOVER.md`) |
 
@@ -30,7 +30,7 @@ The user can always proceed. Kavach never blocks a payment; it breaks the scamme
 git clone https://github.com/IshanGite/Kavach.git && cd Kavach
 export JAVA_HOME=$(/usr/libexec/java_home -v 17)     # JDK 17
 ./scripts/install-hooks.sh
-./gradlew :core:test        # 100+ tests, scenario evals, security gates
+./gradlew :core:test        # 230+ tests, scenario evals, security gates
 ./gradlew :core:eval        # scorecard
 ```
 
@@ -57,8 +57,8 @@ Sense (events) -> Understand (analysts return findings) -> Fuse (RiskEngine: R =
 ```
 
 ```
-| Scams paused before payment                          | 17 / 17 |
-| Normal payments with a pause (tier 2+)               | 0 / 14  |
+| Scams paused before payment                          | 34 / 34 |
+| Normal payments with a pause (tier 2+)               | 0 / 27  |
 | Pause shown before the PIN screen, lead time         | min 6 s, median 18 s |
 ```
 

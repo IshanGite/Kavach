@@ -36,7 +36,7 @@ Total on the phone about 1.5 GB. A phone with 6 GB+ RAM is recommended.
 ```bash
 git clone -b feat/om-helpline-vosk-asr https://github.com/IshanGite/Kavach.git
 cd Kavach
-./gradlew :core:test              # about 10 s, must be green (0 normal scenarios paused)
+./gradlew :core:test              # about 5 to 20 s, must be green (0 normal scenarios paused)
 adb devices                       # the phone must show as "device"
 ./scripts/setup-phone.sh          # builds + installs the APK, downloads and pushes Vosk + Whisper models
 ```
@@ -48,7 +48,7 @@ Whisper https://github.com/k2-fsa/sherpa-onnx/releases/tag/asr-models (`sherpa-o
 Open Kavach > Home > **Fix now**: grant Phone, Contacts, Mic, SMS, Notifications, Display over other apps, battery exemption.
 On OnePlus with "Disable permission monitoring" ON, Claude can grant runtime permissions with
 `adb shell pm grant com.kavach.app android.permission.<NAME>` (READ_PHONE_STATE, READ_CALL_LOG, READ_CONTACTS, RECORD_AUDIO, SEND_SMS, RECEIVE_SMS, POST_NOTIFICATIONS).
-Android 13+: App info > ⋮ > Allow restricted settings, THEN Settings > Accessibility > Kavach ON, and Notification access > Kavach ON.
+Android 13+: App info > the three-dot menu > Allow restricted settings, THEN Settings > Accessibility > Kavach ON, and Notification access > Kavach ON.
 Setup > **Request caller ID role** > Allow (reads the caller number without the restricted call-log permission).
 Reinstalling the app turns Accessibility OFF again: switch it back on.
 Then Settings > "Seed demo payment history", add one guardian number (a friend's), Home > Protection ON. Target: `Readiness: all set`.
@@ -108,7 +108,9 @@ Play them from a second phone or laptop speaker next to the test phone. (A frien
 | 2 | Home > Audio test (normal call on speaker, then WhatsApp call) | SILENT/SIGNAL table; set the best source in Settings |
 | 3 | A friend calls from an unsaved number | Debug log `CallStarted <number>`; mic level moves |
 | 4 | Friend reads the caller script (normal voice, then play the AI-voice audio) | L above 60, nudge banner; Home shows detected language |
-| 5 | During the call open GPay/PhonePe to a TEST contact, type the UPI id the caller said, amount 50000. **STOP BEFORE THE PIN. NEVER PAY.** | full pause BEFORE the PIN screen. If amount/payee are not read: Debug > Last accessibility screen > Copy dump |
+| 4b | **Kavach Pay (the FIN-11 simulated payment app, no bank or SIM needed):** Home > Kavach Pay. Tap "Role-play: normal" then Pay | nothing appears, goes straight to the mock PIN (any 4-6 digits), success screen |
+| 4c | Kavach Pay > "Role-play: coerced" > Pay (it injects an unknown call + scam line and a new payee with Rs 50,000) | full pause BEFORE the PIN: countdown ring, reasons, Call 1930. The floating widget shows the live transcript. Judges can re-run it any number of times |
+| 5 | (Real app, optional) During the call open GPay/PhonePe to a TEST contact, type the UPI id the caller said, amount 50000. **STOP BEFORE THE PIN. NEVER PAY.** | full pause BEFORE the PIN screen. If amount/payee are not read: Debug > Last accessibility screen > Copy dump |
 | 6 | Saved-contact call, pay Rs 200 | nothing appears |
 | 7 | Tier 3 with a guardian number set | guardian SMS arrives; reply `HOLD` extends the timer |
 | 8 | Airplane mode ON, repeat 4 | still works (no cloud dependency) |

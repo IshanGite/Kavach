@@ -32,7 +32,7 @@ Run `./gradlew :core:eval` right before the event and paste the real scorecard. 
 
 | Number | What it is | How to say it |
 |---|---|---|
-| 30 of 30 scam scenarios paused before the PIN screen; 0 of 23 normal scenarios paused | Our scenario suite, including a hijacked LLM, a 12 s LLM and a phone with no audio | "Replayed through the same engine the app runs." |
+| 34 of 34 scam scenarios paused before the PIN screen; 0 of 27 normal scenarios paused | Our scenario suite, including a hijacked LLM, a 12 s LLM and a phone with no audio | "Replayed through the same engine the app runs." |
 | **First run on 12 unseen scams the lexicon had never seen: 6 of 12** (rule-based language layer only) | The honest held-out result before we tuned | "Our first held-out test caught half. That's why the language layer is an LLM *plus* rules, and why we now generalise vocabulary classes, not phrases." |
 | 0 of 8 unseen normal scenarios paused | Held-out normal life | "No false pauses on situations we didn't write for." |
 | Live `gemma3:4b` in the loop: see `scorecard-live-*.md` | The real local model on the full suite | Quote the file's numbers, including latency |
@@ -49,7 +49,7 @@ Run `./gradlew :core:eval` right before the event and paste the real scorecard. 
 5. **Breaks the isolation, not just warns.** Specific reasons from *their* call, a timer, a one-tap family call, a guardian alert with `HOLD`, a safe word against voice clones.
 6. **Payee-from-call hard override.** The account read out on the call appearing on the pay screen is near-certain coercion.
 7. **It helps after, too.** Complaint fields in the portal's own layout; 1930 first if money left.
-8. **Evals that run constantly.** 50+ scenarios, fuzzed invariants, repo security gates in CI. A judge can run it.
+8. **Evals that run constantly.** 60+ scenarios, fuzzed invariants, repo security gates in CI. A judge can run it.
 
 ## Judge Q&A
 
@@ -60,7 +60,7 @@ No. Call blockers act on the call. The victim here *wants* the call (it's "the p
 Because false positives on a payment product destroy trust, and a blocked legitimate payment is a real harm. A pause that the user can always end keeps the human in charge and still breaks urgency and isolation, which is what the scam depends on.
 
 **How do you avoid false positives?**
-Two guards in code: a pause needs a payment to be starting, and paying a saved, frequently-paid person with no live call is never interrupted. Known callers are never analysed. The user's own payment history keeps everyday amounts quiet. We measure it: 0 of 23 normal scenarios paused, including a 3 am payment, a large payment to saved family, and a 40-minute call with a friend before paying rent.
+Two guards in code: a pause needs a payment to be starting, and paying a saved, frequently-paid person with no live call is never interrupted. Known callers are never analysed. The user's own payment history keeps everyday amounts quiet. We measure it: 0 of 27 normal scenarios paused, including a 3 am payment, a large payment to saved family, and a 40-minute call with a friend before paying rent.
 
 **What if the scammer tells the AI to ignore its instructions?**
 We test exactly that. A rule-based analyst, which cannot be talked into anything, sits as a floor under the LLM, and the context score never depended on the LLM. In the "hijacked model" scenario the model returns risk 0 and a made-up payee and the pause still fires.
