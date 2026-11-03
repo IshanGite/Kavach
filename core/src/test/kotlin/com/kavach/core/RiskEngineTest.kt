@@ -5,6 +5,7 @@ import com.kavach.core.TestKit.pay
 import com.kavach.core.TestKit.say
 import com.kavach.core.TestKit.session
 import com.kavach.core.TestKit.unknownCall
+import com.kavach.core.analysis.KeywordAnalyst
 import com.kavach.core.baseline.PastPayment
 import com.kavach.core.config.RiskConfig
 import com.kavach.core.model.*
@@ -55,7 +56,10 @@ class RiskEngineTest {
     @Test
     fun `call from a saved contact triggers none of the call-based rules even with a payment app open`() {
         val r = engine.evaluate(session(TestKit.savedCall(), pay(10, PayStage.AMOUNT_ENTERED, 1500.0, "rahul.son@okhdfcbank")))
-        val callRules = setOf(RuleCode.UNKNOWN_LIVE_CALL, RuleCode.PAYMENT_APP_DURING_CALL, RuleCode.LONG_CALL, RuleCode.UNKNOWN_VOIP_OR_VIDEO)
+        val callRules = setOf(
+            RuleCode.UNKNOWN_LIVE_CALL, RuleCode.PAYMENT_APP_DURING_CALL, RuleCode.LONG_CALL,
+            RuleCode.UNKNOWN_VOIP_OR_VIDEO, RuleCode.INSTITUTION_FROM_PERSONAL_MOBILE,
+        )
         assertTrue(r.rules.none { it.code in callRules }, "${r.rules}")
         assertEquals(Tier.NONE, r.tier)
     }
@@ -269,5 +273,77 @@ class RiskEngineTest {
     fun `engine is deterministic`() {
         val s = session(unknownCall(), say(5, "arrest warrant cyber crime"), pay(10, PayStage.AMOUNT_ENTERED, 50000.0, "n@ybl"))
         assertEquals(engine.evaluate(s), engine.evaluate(s))
+    }
+
+    // ------------------------------------------------------------ institution claim from a personal mobile
+
+    private val institutionScript = "I am calling from your bank. I am inspector Sharma. Your account will be blocked. This is urgent."
+
+    @Test
+    fun `personal mobile is a 10-digit 6 to 9 number, and 140 or 160 series are not`() {
+        assertTrue(CallerNumber.isPersonalMobile("+91 98765 43210"))
+        assertTrue(CallerNumber.isPersonalMobile("09876543210"))
+        assertTrue(CallerNumber.isPersonalMobile("9876543210"))
+        assertFalse(CallerNumber.isPersonalMobile("+91 1600 123 456"), "160 service series")
+        assertFalse(CallerNumber.isPersonalMobile("1600123456"))
+        assertFalse(CallerNumber.isPersonalMobile("+91 1401234567"), "140 promotional series")
+        assertFalse(CallerNumber.isPersonalMobile("1401234567"))
+        assertFalse(CallerNumber.isPersonalMobile("+91 11 2345 6789"), "Delhi landline does not start with 6-9")
+        assertFalse(CallerNumber.isPersonalMobile("+44 7911 123456"))
+        assertFalse(CallerNumber.isPersonalMobile("unknown"))
+        assertFalse(CallerNumber.isPersonalMobile("1930"))
+        // Documented limitation: Bengaluru 80 and Ahmedabad 79 landlines share the mobile shape.
+        assertTrue(CallerNumber.isPersonalMobile("+91 80444 22110"))
+    }
+
+    @Test
+    fun `institution finding plus a personal mobile adds 10 and nothing less does`() {
+        assertEquals(10, RiskConfig().points.institutionFromPersonalMobile)
+        val police = TacticsFindings(claimedIdentity = ClaimedIdentity.POLICE, tactics = Tactics(authorityImpersonation = 0.9))
+        val bankOnly = TacticsFindings(claimedIdentity = ClaimedIdentity.BANK)
+        val government = TacticsFindings(claimedIdentity = ClaimedIdentity.OTHER, tactics = Tactics(authorityImpersonation = 0.55))
+        val weakOther = TacticsFindings(claimedIdentity = ClaimedIdentity.OTHER, tactics = Tactics(authorityImpersonation = 0.4))
+        val family = TacticsFindings(claimedIdentity = ClaimedIdentity.FAMILY_MEMBER, tactics = Tactics(authorityImpersonation = 0.9))
+        val courier = TacticsFindings(claimedIdentity = ClaimedIdentity.COURIER, tactics = Tactics(authorityImpersonation = 0.9))
+
+        fun hit(vararg events: KavachEvent) = points(engine.evaluate(session(*events)))[RuleCode.INSTITUTION_FROM_PERSONAL_MOBILE]
+
+        assertEquals(10, hit(unknownCall(number = "+91 98765 43210"), FindingsReady(at(4), police)))
+        assertEquals(10, hit(unknownCall(number = "+91 98765 43210"), FindingsReady(at(4), bankOnly)))
+        assertEquals(10, hit(unknownCall(number = "+91 98765 43210"), FindingsReady(at(4), government)))
+        assertNull(hit(unknownCall(number = "+91 98765 43210"), FindingsReady(at(4), weakOther)))
+        assertNull(hit(unknownCall(number = "+91 98765 43210"), FindingsReady(at(4), family)))
+        assertNull(hit(unknownCall(number = "+91 98765 43210"), FindingsReady(at(4), courier)))
+        assertNull(hit(unknownCall(number = "+91 98765 43210")))
+        assertNull(hit(unknownCall(number = "+91 1600 123 456"), FindingsReady(at(4), police)))
+        assertNull(hit(unknownCall(number = "+91 1401234567"), FindingsReady(at(4), bankOnly)))
+        assertNull(hit(CallStarted(at(0), "+91 98765 43210", isInContacts = true, contactName = "Branch"), FindingsReady(at(4), bankOnly)))
+        assertNull(hit(unknownCall(number = "+91 98765 43210"), FindingsReady(at(4), police), CallEnded(at(8), 8)))
+        val spokenPolice = KeywordAnalyst.analyze("Papa main hoon Rahul, mera accident ho gaya, police ne pakad liya, abhi paise bhejo")
+        assertEquals(ClaimedIdentity.FAMILY_MEMBER, spokenPolice.claimedIdentity)
+        assertNull(hit(unknownCall(number = "+91 98765 43210"), say(3, "x"), FindingsReady(at(4), spokenPolice)))
+    }
+
+    @Test
+    fun `the personal-mobile rule is what crosses this bank script into a pause`() {
+        val findings = KeywordAnalyst.analyze(institutionScript)
+        assertTrue(
+            findings.claimedIdentity == ClaimedIdentity.POLICE || findings.claimedIdentity == ClaimedIdentity.BANK,
+            "lexicon must still hear an institution, got ${findings.claimedIdentity}",
+        )
+        fun eval(number: String) = engine.evaluate(session(
+            unknownCall(number = number),
+            say(4, institutionScript),
+            FindingsReady(at(5), findings),
+            pay(20),
+            pay(30, PayStage.AMOUNT_ENTERED, 5000.0, "verify.desk@oksbi"),
+        ))
+        val mobile = eval("+91 98765 43210")
+        val official = eval("+91 1600 123 456")
+        assertEquals(10, points(mobile)[RuleCode.INSTITUTION_FROM_PERSONAL_MOBILE])
+        assertNull(points(official)[RuleCode.INSTITUTION_FROM_PERSONAL_MOBILE])
+        assertEquals(official.contextScore + 10, mobile.contextScore)
+        assertTrue(mobile.tier.level >= Tier.PAUSE.level, "mobile R=${mobile.risk} C=${mobile.contextScore} L=${mobile.languageScore}")
+        assertTrue(official.tier.level < Tier.PAUSE.level, "160 R=${official.risk} C=${official.contextScore} L=${official.languageScore}")
     }
 }

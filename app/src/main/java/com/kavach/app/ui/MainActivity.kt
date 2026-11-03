@@ -29,6 +29,7 @@ import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import com.kavach.app.KavachService
 import com.kavach.app.container
+import com.kavach.app.sense.CallScreeningRole
 
 class MainActivity : ComponentActivity() {
     private val route = mutableStateOf("home")
@@ -184,8 +185,12 @@ fun HomeScreen(go: (String) -> Unit) {
 fun SetupScreen() {
     val ctx = LocalContext.current
     val tick = rememberResumeTick()
-    val checks = remember(tick) { Health.checks(ctx) }
     val launcher = rememberLauncherForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) { }
+    var roleTick by remember { mutableIntStateOf(0) }
+    val roleLauncher = rememberLauncherForActivityResult(ActivityResultContracts.StartActivityForResult()) { roleTick++ }
+    val checks = remember(tick, roleTick) { Health.checks(ctx) }
+    val callerIdAvailable = remember(tick, roleTick) { CallScreeningRole.isAvailable(ctx) }
+    val callerIdHeld = remember(tick, roleTick) { CallScreeningRole.isHeld(ctx) }
     fun open(i: Intent) = ctx.startActivity(i.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
     val pkg = Uri.parse("package:${ctx.packageName}")
 
@@ -201,6 +206,18 @@ fun SetupScreen() {
                 if (Build.VERSION.SDK_INT >= 33) perms += Manifest.permission.POST_NOTIFICATIONS
                 launcher.launch(perms.toTypedArray())
             }) { Text("Grant runtime permissions") }
+        }
+        Section("Caller ID (call screening role)") {
+            Text("Lets Kavach read the incoming phone number and whether it is a saved contact. Kavach always allows the call. Until this is granted, call detection stays on the phone-state broadcast alone.", fontSize = 13.sp)
+            if (callerIdAvailable) {
+                Text(if (callerIdHeld) "Granted." else "Tap once. Android confirms the role, including when another caller-ID app has it.", fontSize = 13.sp)
+                Button(
+                    onClick = { CallScreeningRole.requestIntent(ctx)?.let { roleLauncher.launch(it) } },
+                    enabled = !callerIdHeld,
+                ) { Text(if (callerIdHeld) "Caller ID role granted" else "Request caller ID role") }
+            } else {
+                Text("This phone has no call screening role. Call detection stays on the phone-state broadcast.", fontSize = 13.sp)
+            }
         }
         Section("Accessibility service (most important)") {
             Text("Lets Kavach see that a payment app is open, the amount and payee, and the UPI PIN screen, so it can pause BEFORE the PIN. It also draws the pause screen.", fontSize = 13.sp)

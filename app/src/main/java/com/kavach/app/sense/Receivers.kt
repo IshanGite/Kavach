@@ -11,7 +11,12 @@ import com.kavach.core.model.GuardianHold
 import com.kavach.core.model.MessageReceived
 import com.kavach.core.sense.PhoneState
 
-/** Cellular call state. A manifest receiver, so it fires even if the UI is not open. Needs READ_PHONE_STATE + READ_CALL_LOG for the number. */
+/**
+ * Cellular call state. A manifest receiver, so it fires even if the UI is not open.
+ * Needs READ_PHONE_STATE. EXTRA_INCOMING_NUMBER needs READ_CALL_LOG and is often empty on Android 10+.
+ * When the call-screening role is granted, [KavachCallScreeningService] has already stored the number
+ * on RINGING; a blank extra must be passed through so [com.kavach.core.sense.CallStateTracker] keeps it.
+ */
 class PhoneStateReceiver : BroadcastReceiver() {
     @Suppress("DEPRECATION")
     override fun onReceive(context: Context, intent: Intent) {

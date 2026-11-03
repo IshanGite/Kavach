@@ -1,0 +1,44 @@
+{
+  "id": "normal-official-160-series-call",
+  "kind": "normal",
+  "description": "Same bank-and-inspector script and the same new large payment as scam-institution-personal-mobile, but the caller is on a TRAI 1600-series number. The personal-mobile rule must not fire, so this stays a nudge and never a pause. A full coercion script on this series would still pause from the other rules.",
+  "events": [
+    {
+      "t": 0,
+      "type": "call_started",
+      "number": "+91 1600 123 456",
+      "in_contacts": false
+    },
+    {
+      "t": 5,
+      "type": "transcript",
+      "text": "I am calling from your bank. I am inspector Sharma. Your account will be blocked. This is urgent.",
+      "speaker": "caller"
+    },
+    {
+      "t": 40,
+      "type": "payment",
+      "app": "PhonePe",
+      "stage": "opened"
+    },
+    {
+      "t": 50,
+      "type": "payment",
+      "app": "PhonePe",
+      "stage": "amount_entered",
+      "amount": 5000,
+      "payee": "verify.desk@oksbi"
+    },
+    {
+      "t": 58,
+      "type": "payment",
+      "app": "PhonePe",
+      "stage": "pin_screen",
+      "amount": 5000,
+      "payee": "verify.desk@oksbi"
+    }
+  ],
+  "expect": {
+    "max_tier": 1
+  }
+}

@@ -115,6 +115,7 @@ class InterventionPlanner(private val cfg: RiskConfig) {
             if (t.threatOfArrestOrLegalAction >= 0.6) out += T.threatOnly(l)
         }
         if (r.hardOverride == HardOverride.PAYEE_FROM_CALL) out += T.payeeFromCall(l)
+        if (r.rules.any { it.code == RuleCode.INSTITUTION_FROM_PERSONAL_MOBILE }) out += T.institutionFromPersonalMobile(l)
         r.rules.sortedByDescending { it.points }.forEach { hit ->
             when (hit.code) {
                 RuleCode.NUMBER_ON_SCAM_LIST -> out += T.scamList(l)
@@ -199,6 +200,11 @@ internal object T {
     fun bigAmount(l: Lang, detail: String) = pick(l, "This amount is ${detail.ifBlank { "much higher than" }} your usual payment.", "यह रकम आपकी सामान्य रकम से ${detail.ifBlank { "बहुत ज़्यादा" }} है।")
     fun otpDuringCall(l: Lang) = pick(l, "An OTP or payment request arrived during this call.", "इस कॉल के दौरान OTP या पेमेंट रिक्वेस्ट आई।")
     fun unknownCaller(l: Lang) = pick(l, "You are on a live call with a number that is not in your contacts.", "आप ऐसे नंबर से कॉल पर हैं जो आपके कॉन्टैक्ट्स में नहीं है।")
+    fun institutionFromPersonalMobile(l: Lang) = pick(
+        l,
+        "They claim to be an official, but this number is an ordinary mobile, not a 140 or 160 service line.",
+        "वे खुद को अधिकारी बता रहे हैं, लेकिन यह नंबर साधारण मोबाइल है, 140 या 160 सेवा लाइन नहीं।",
+    )
     fun repeatedNewPayees(l: Lang) = pick(l, "You are paying several different new accounts in a row, a common pattern in investment and task scams.", "आप लगातार कई नए अकाउंट में पैसे भेज रहे हैं, निवेश और टास्क ठगी में ऐसा ही होता है।")
     fun escalating(l: Lang) = pick(l, "Each payment is bigger than the last one.", "हर पेमेंट पिछले से बड़ा है।")
     fun syntheticVoice(l: Lang) = pick(l, "The caller's voice sounds artificial.", "कॉलर की आवाज़ बनावटी लग रही है।")

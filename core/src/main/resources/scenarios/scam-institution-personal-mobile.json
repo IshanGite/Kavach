@@ -1,0 +1,46 @@
+{
+  "id": "scam-institution-personal-mobile",
+  "kind": "scam",
+  "description": "Caller claims to be the bank and a police inspector from a normal 10-digit mobile (98765 43210), not a TRAI 140 or 160 number. Unknown call, payment app, new payee and a large amount sit just under a pause; the +10 personal-mobile rule is what crosses it. Same script as normal-official-160-series-call.",
+  "events": [
+    {
+      "t": 0,
+      "type": "call_started",
+      "number": "+91 98765 43210",
+      "in_contacts": false
+    },
+    {
+      "t": 5,
+      "type": "transcript",
+      "text": "I am calling from your bank. I am inspector Sharma. Your account will be blocked. This is urgent.",
+      "speaker": "caller"
+    },
+    {
+      "t": 40,
+      "type": "payment",
+      "app": "PhonePe",
+      "stage": "opened"
+    },
+    {
+      "t": 50,
+      "type": "payment",
+      "app": "PhonePe",
+      "stage": "amount_entered",
+      "amount": 5000,
+      "payee": "verify.desk@oksbi"
+    },
+    {
+      "t": 58,
+      "type": "payment",
+      "app": "PhonePe",
+      "stage": "pin_screen",
+      "amount": 5000,
+      "payee": "verify.desk@oksbi"
+    }
+  ],
+  "expect": {
+    "min_tier": 2,
+    "min_tier_at_payment": 2,
+    "pause_before_pin": true
+  }
+}

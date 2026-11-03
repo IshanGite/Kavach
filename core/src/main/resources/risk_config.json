@@ -14,7 +14,8 @@
     "number_on_scam_list": 40,
     "related_sms_flagged": 10,
     "repeated_new_payees": 20,
-    "escalating_new_payee_amounts": 10
+    "escalating_new_payee_amounts": 10,
+    "institution_from_personal_mobile": 10
   },
   "tiers": { "nudge": 35, "pause": 60, "pause_guardian": 80 },
   "context_weight": 0.6,

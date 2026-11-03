@@ -48,9 +48,13 @@ class OrchestratorTest {
     @Test
     fun `the pause overlay is shown once per escalation, not re-shown on every later frame`() {
         val o = scamCall()
-        o.onEvent(pay(30))
-        val shown = o.onEvent(pay(36, PayStage.AMOUNT_ENTERED, 50000.0, "verify.pay@oksbi"))
+        // Inspector on a personal mobile already clears a pause when the payment app opens.
+        // A later amount frame at the same tier must not create the overlay again.
+        val shown = o.onEvent(pay(30))
         assertTrue(shown.tier.level >= Tier.PAUSE.level); assertTrue(shown.has<Effect.ShowPause>())
+        val later = o.onEvent(pay(36, PayStage.AMOUNT_ENTERED, 50000.0, "verify.pay@oksbi"))
+        assertTrue(later.tier.level >= shown.tier.level)
+        assertFalse(later.has<Effect.ShowPause>(), "same tier must not recreate the overlay")
         val again = o.onEvent(pay(40, PayStage.PIN_SCREEN, 50000.0, "verify.pay@oksbi"))
         assertFalse(again.has<Effect.ShowPause>(), "overlay must not be re-created on the PIN screen")
         assertFalse(again.has<Effect.SendGuardianSms>(), "guardian must not be spammed")

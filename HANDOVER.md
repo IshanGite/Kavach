@@ -14,8 +14,8 @@ Phone verification steps: `docs/PHONE_TEST_PLAN.md`.
 
 | | |
 |---|---|
-| Last updated | 2026-11-03 (night), Vosk ASR session |
-| `main` is | green: 167 core tests; offline evals 30/30 scams paused and 0/24 normal paused; **with the live gemma3:4b in the loop 27/27 and 0/23**; security gates pass; APK builds; lint clean |
+| Last updated | 2026-11-03 (night), personal-mobile institution rule |
+| `main` is | green: 171 core tests; offline evals 31/31 scams paused and 0/25 normal paused (3 nudges); **live gemma3:4b was 27/27 and 0/23 and was not re-run**; security gates pass; APK builds; lint clean |
 | Held-out honesty | 20 unseen scenarios run BEFORE tuning: rule layer alone caught 6/12 scams. Those 20 are now used up for tuning; **we still need a fresh held-out set from someone outside the team** |
 | Model latency (laptop, gemma3:4b, terse prompt) | median 5.4 s, p90 6.9 s. The phone will be slower; on the phone expect timeouts and rely on the keyword floor. Measure with Pre-flight |
 | App has been run on a real phone? | **NO. Nothing in `app/` has ever executed on a device.** It compiles, lints and builds an APK. Treat every on-device behaviour as unverified until ticked in `docs/PHONE_TEST_PLAN.md`. |
@@ -54,7 +54,7 @@ Legend: ✅ built and tested on the laptop · 🟡 built, compiles, **untested o
 
 ## What is verified vs not
 
-**Verified (laptop):** all `core` behaviour, 54 scenarios (scorecard 30/30 scams paused, 0/24 normal paused), fuzzed invariants, repo security gates (secrets, audio files, cleartext HTTP, logging, manifest
+**Verified (laptop):** all `core` behaviour, 56 scenarios (scorecard 31/31 scams paused, 0/25 normal paused), fuzzed invariants, repo security gates (secrets, audio files, cleartext HTTP, logging, manifest
 permissions/exported/backup), APK assembles with Vosk + JNA native libs, Android lint passes, companion script talks to a mock server.
 Vosk model-folder resolution and result JSON parsing have JVM unit tests. Loading a model and transcribing audio have not run on a phone.
 
@@ -124,6 +124,8 @@ PHONE_STATE number delivery, mic during call, Vosk model load and transcription,
 | `app/ui` | whoever has the phone in hand; keep PRs small |
 
 ## Session log (newest first, append only)
+
+- **2026-11-03 night (personal-mobile institution rule):** Unknown caller + bank/police/CBI/other-authority finding + a normal 10-digit mobile (not 140/160) is +10 (`INSTITUTION_FROM_PERSONAL_MOBILE`). Family and courier labels and saved contacts do not score. `:core:test` passed (171 tests). Scorecard 31/31 scams paused, 0/25 normal paused; the new 160-series twin is a nudge (tier 1), the personal-mobile twin pauses. TRAI series reading is unverified against the directive (decision 33). Live model suite not re-run. Nothing ran on a device.
 
 - **2026-11-03 night (Vosk ASR):** Wired `com.alphacephei:vosk-android:0.3.75` behind `AsrEngine`. Models load off the main thread from external files; none present → `NoopAsr` (`ASR: none (push Vosk model)`). JNA comes in as the 5.18.1 AAR already declared by that POM (duplicate-class check passed; `jna:5.13.0` was not added). `docs/REPOS_TO_REUSE.md` was not in the tree. `:core:test` passed (167 tests, scorecard 30/30 scams paused, 0/24 normal paused), `:app:test` passed (Vosk JSON/dir tests included), `:app:assembleDebug` and `:app:lintDebug` passed. Nothing ran on a device. Next: push the two small models and do phone step 6.
 

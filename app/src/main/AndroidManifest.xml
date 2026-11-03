@@ -63,6 +63,16 @@
             </intent-filter>
         </receiver>
 
+        <!-- Observe-only. The system binds this only after ROLE_CALL_SCREENING is granted. Always responds allow. -->
+        <service
+            android:name=".sense.KavachCallScreeningService"
+            android:exported="true"
+            android:permission="android.permission.BIND_SCREENING_SERVICE">
+            <intent-filter>
+                <action android:name="android.telecom.CallScreeningService" />
+            </intent-filter>
+        </service>
+
         <receiver
             android:name=".sense.SmsReceiver"
             android:exported="true"

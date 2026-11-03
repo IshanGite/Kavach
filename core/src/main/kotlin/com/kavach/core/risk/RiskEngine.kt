@@ -3,6 +3,7 @@ package com.kavach.core.risk
 import com.kavach.core.baseline.PaymentBaseline
 import com.kavach.core.config.RiskConfig
 import com.kavach.core.model.CallChannel
+import com.kavach.core.model.ClaimedIdentity
 import com.kavach.core.state.IntentKind
 import com.kavach.core.state.SessionState
 import com.kavach.core.text.Extractors
@@ -20,7 +21,7 @@ enum class Tier(val level: Int) {
 enum class RuleCode {
     UNKNOWN_LIVE_CALL, LONG_CALL, UNKNOWN_VOIP_OR_VIDEO, PAYMENT_APP_DURING_CALL, NEW_PAYEE, AMOUNT_ABOVE_USUAL,
     ODD_HOUR, REMOTE_ACCESS_ACTIVE, OTP_OR_COLLECT_DURING_CALL, SYNTHETIC_VOICE, NUMBER_ON_SCAM_LIST, RELATED_SMS_FLAGGED,
-    REPEATED_NEW_PAYEES, ESCALATING_NEW_PAYEE_AMOUNTS,
+    REPEATED_NEW_PAYEES, ESCALATING_NEW_PAYEE_AMOUNTS, INSTITUTION_FROM_PERSONAL_MOBILE,
 }
 
 enum class HardOverride { REMOTE_ACCESS_WITH_PAYMENT, PAYEE_FROM_CALL }
@@ -121,6 +122,12 @@ class RiskEngine(
 
         if (call != null && s.callLive && isScamNumber(call.number)) rules += RuleHit(RuleCode.NUMBER_ON_SCAM_LIST, p.numberOnScamList)
 
+        // Both must hold: an institution finding from the transcript analyst, and a normal mobile.
+        // Unknown-live-call is already +20. 140/160 series and saved contacts add nothing here.
+        if (unknown && call != null && CallerNumber.isPersonalMobile(call.number) && claimsInstitution(s)) {
+            rules += RuleHit(RuleCode.INSTITUTION_FROM_PERSONAL_MOBILE, p.institutionFromPersonalMobile, "ordinary mobile, not 140/160")
+        }
+
         val smsAt = s.smsFlaggedAtMs
         if (smsAt != null && s.nowMs - smsAt in 0..DAY_MS && (unknown || intent != null)) {
             rules += RuleHit(RuleCode.RELATED_SMS_FLAGGED, p.relatedSmsFlagged)
@@ -174,6 +181,20 @@ class RiskEngine(
         return RiskResult(context, language, risk, tier, rules, override, guards, hasIntent)
     }
 
+    /**
+     * Reuses the transcript finding. Does not call an analyst.
+     * Bank, police and CBI are explicit labels. Other authorities (income tax, TRAI, a court, RBI)
+     * land as OTHER once the authority lexicon matches. A family story or a courier label does not:
+     * "police ne pakad liya" must not score.
+     */
+    private fun claimsInstitution(s: SessionState): Boolean = when (s.claimedIdentity) {
+        ClaimedIdentity.BANK, ClaimedIdentity.POLICE, ClaimedIdentity.CBI_OFFICER -> true
+        // One lexicon hit scores 0.65; the keyword floor keeps 0.85 of that (~0.55). 0.5 still
+        // requires a real hit and ignores an uncorroborated model score, which is capped at 0.4.
+        ClaimedIdentity.OTHER -> s.findings.any { it.tactics.authorityImpersonation >= AUTHORITY_CLAIM }
+        else -> false
+    }
+
     private fun isOddHour(atMs: Long): Boolean {
         val h = Instant.ofEpochMilli(atMs).atZone(zone).hour
         return if (cfg.oddHourStart > cfg.oddHourEnd) h >= cfg.oddHourStart || h < cfg.oddHourEnd else h in cfg.oddHourStart until cfg.oddHourEnd
@@ -181,5 +202,6 @@ class RiskEngine(
 
     private companion object {
         const val DAY_MS = 24L * 60 * 60 * 1000
+        const val AUTHORITY_CLAIM = 0.5
     }
 }

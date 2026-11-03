@@ -17,6 +17,7 @@
   "scam-remote-access-tripwire",
   "scam-payee-from-call-only",
   "scam-investment-telegram-tasks",
+  "scam-institution-personal-mobile",
   "normal-pay-shopkeeper",
   "normal-pay-new-small",
   "normal-family-call-pay-family",
@@ -52,5 +53,6 @@
   "heldout-normal-electrician-pays-qr",
   "heldout-normal-friend-lends-money",
   "normal-market-shopping-three-new-vendors",
-  "normal-clinic-llm-lists-business-name-as-payee"
+  "normal-clinic-llm-lists-business-name-as-payee",
+  "normal-official-160-series-call"
 ]

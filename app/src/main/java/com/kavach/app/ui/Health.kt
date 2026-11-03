@@ -7,6 +7,7 @@ import android.os.PowerManager
 import android.provider.Settings
 import androidx.core.app.NotificationManagerCompat
 import com.kavach.app.engine.hasPermission
+import com.kavach.app.sense.CallScreeningRole
 import com.kavach.app.sense.KavachAccessibilityService
 
 data class Check(val label: String, val ok: Boolean, val why: String)
@@ -25,6 +26,7 @@ object Health {
 
     fun checks(ctx: Context): List<Check> = listOf(
         Check("Phone state + call log", ctx.hasPermission(Manifest.permission.READ_PHONE_STATE) && ctx.hasPermission(Manifest.permission.READ_CALL_LOG), "Know when a call starts and who is calling"),
+        Check("Caller ID (call screening role)", CallScreeningRole.isHeld(ctx), "Incoming number on Android 10+, and whether they are a saved contact. The call always rings"),
         Check("Contacts", ctx.hasPermission(Manifest.permission.READ_CONTACTS), "Saved contacts are never analysed or recorded"),
         Check("Microphone", ctx.hasPermission(Manifest.permission.RECORD_AUDIO), "Listen on speakerphone during calls from unknown numbers only"),
         Check("SMS", ctx.hasPermission(Manifest.permission.RECEIVE_SMS) && ctx.hasPermission(Manifest.permission.SEND_SMS), "Spot scam texts, send guardian alerts, read the guardian's HOLD"),

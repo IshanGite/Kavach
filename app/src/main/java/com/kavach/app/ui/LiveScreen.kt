@@ -53,6 +53,7 @@ private fun chip(code: RuleCode): String = when (code) {
     RuleCode.RELATED_SMS_FLAGGED -> "Related scam SMS"
     RuleCode.REPEATED_NEW_PAYEES -> "Several new payees"
     RuleCode.ESCALATING_NEW_PAYEE_AMOUNTS -> "Escalating amounts"
+    RuleCode.INSTITUTION_FROM_PERSONAL_MOBILE -> "Official claim from a mobile"
 }
 
 /**

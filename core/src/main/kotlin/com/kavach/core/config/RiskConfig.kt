@@ -62,6 +62,11 @@ data class RiskConfig(
         @SerialName("repeated_new_payees") val repeatedNewPayees: Int = 20,
         /** ...and this attempt is larger than the earlier ones and well above the user's usual amount (escalating deposits). */
         @SerialName("escalating_new_payee_amounts") val escalatingNewPayeeAmounts: Int = 10,
+        /**
+         * Unknown caller claims a bank, the police, or another authority from a normal mobile, not a 140/160 series number.
+         * Small on purpose: unknown-live-call is already +20, and this must not carry a normal payment to a pause by itself.
+         */
+        @SerialName("institution_from_personal_mobile") val institutionFromPersonalMobile: Int = 10,
     )
 
     @Serializable
