@@ -154,6 +154,7 @@ class Container(val app: Application) {
                 app,
                 note = { live.note(it) },
                 onLabel = { whisperStatus.value = it },
+                languageSetting = { settings.state.value.speechLanguage },
             )
             if (engine != null) {
                 whisperEngine = engine

@@ -122,6 +122,13 @@ fun SettingsScreen() {
                 }, label = { Text("Whisper") })
             }
             Text("Vosk is the default. Whisper (Hindi, Marathi, English) needs the sherpa-whisper folder. If those files are missing, Kavach stays on Vosk.", fontSize = 12.sp)
+            Text(if (s.language == "HI") "बोली की भाषा (Whisper):" else "Speech language (Whisper):", fontSize = 13.sp)
+            Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                val hi = s.language == "HI"
+                listOf("auto" to (if (hi) "ऑटो (हि/अं/म)" else "Auto (hi/en/mr)"), "hi" to (if (hi) "हिन्दी" else "Hindi"), "en" to (if (hi) "अंग्रेज़ी" else "English"), "mr" to (if (hi) "मराठी" else "Marathi")).forEach { (code, label) ->
+                    FilterChip(selected = s.speechLanguage == code, onClick = { up { it.copy(speechLanguage = code) } }, label = { Text(label, fontSize = 11.sp) })
+                }
+            }
             Text("Source used during calls (set from the Day-0 test):", fontSize = 13.sp)
             Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                 listOf("VOICE_RECOGNITION", "MIC", "CAMCORDER").forEach { src ->

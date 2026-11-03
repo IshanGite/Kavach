@@ -25,6 +25,9 @@ interface AsrEngine {
     val name: String
     /** ISO 639-1 code from the last window, or blank when this engine does not detect a language. */
     val detectedLanguage: String get() = ""
+
+    /** A new call started: forget per-call state such as a sticky language. */
+    fun resetSession() {}
     /** 16 kHz mono PCM, about 5 s. Return the transcript or null if nothing intelligible. */
     suspend fun transcribe(pcm: ShortArray, sampleRateHz: Int): String?
     /** Free native weights. Vosk stays loaded for the process; Whisper releases on switch. */
@@ -73,6 +76,7 @@ class AudioCaptureController(
     @Synchronized
     fun start() {
         if (job?.isActive == true) return
+        runCatching { asr().resetSession() }
         if (!ctx.hasPermission(Manifest.permission.RECORD_AUDIO)) { engine.note("Audio: RECORD_AUDIO not granted, option D only"); return }
         job = CoroutineScope(Dispatchers.IO + SupervisorJob()).launch {
             try { capture() } catch (e: CancellationException) { throw e } catch (e: Exception) { engine.note("Audio capture failed: ${e.javaClass.simpleName}: ${e.message}") }

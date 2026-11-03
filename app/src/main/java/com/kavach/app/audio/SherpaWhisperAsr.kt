@@ -29,6 +29,7 @@ class SherpaWhisperAsr internal constructor(
     private val onLabel: (String) -> Unit,
     private val threads: Int,
     recognizer: OfflineRecognizer,
+    private val languageSetting: () -> String = { WhisperLanguagePolicy.AUTO },
 ) : AsrEngine {
     private val lock = Any()
     private var current: WhisperFiles = initial
@@ -37,9 +38,14 @@ class SherpaWhisperAsr internal constructor(
     private var reportedStayOnBase = false
 
     @Volatile private var detected: String = ""
+    private val sticky = WhisperLanguagePolicy.Sticky()
 
     override val name: String get() = whisperHomeLabel(detected)
     override val detectedLanguage: String get() = detected
+
+    override fun resetSession() {
+        synchronized(lock) { sticky.reset(); detected = "" }
+    }
 
     override fun release() {
         synchronized(lock) {
@@ -57,11 +63,27 @@ class SherpaWhisperAsr internal constructor(
                 for (i in pcm.indices) samples[i] = pcm[i] / 32768.0f
                 synchronized(lock) {
                     if (released) return@synchronized null
+                    val windowMs = pcm.size * 1000L / sampleRateHz
                     val started = System.nanoTime()
-                    val result = decode(recognizer, samples, sampleRateHz)
-                    val ms = (System.nanoTime() - started) / 1_000_000L
+                    val decodeLang = WhisperLanguagePolicy.decodeLanguage(languageSetting(), sticky.current())
+                    var result = decode(recognizer, samples, sampleRateHz, decodeLang)
+                    var ms = (System.nanoTime() - started) / 1_000_000L
+                    var lang = normalizeWhisperLang(result.lang)
+                    if (WhisperLanguagePolicy.needsHindiRedecode(decodeLang, lang)) {
+                        if (WhisperLanguagePolicy.redecodeFits(ms, windowMs)) {
+                            result = decode(recognizer, samples, sampleRateHz, "hi")
+                            ms = (System.nanoTime() - started) / 1_000_000L
+                            lang = "hi"
+                        } else {
+                            note("whisper detected '$lang', re-decode would exceed the window; using single decode")
+                            lang = ""
+                        }
+                    } else if (decodeLang.isNotEmpty()) {
+                        lang = decodeLang
+                    } else {
+                        lang = WhisperLanguagePolicy.supported(lang) ?: ""
+                    }
                     note(asrWindowNote(pcm.size, sampleRateHz, ms))
-                    val lang = normalizeWhisperLang(result.lang)
                     if (lang.isNotEmpty() && lang != detected) {
                         detected = lang
                         onLabel(name)
@@ -69,7 +91,14 @@ class SherpaWhisperAsr internal constructor(
                     if (current.size == "base" && whisperDecodeSlowerThanWindow(ms, pcm.size, sampleRateHz)) {
                         dropToTiny(ms)
                     }
-                    result.text.trim().ifEmpty { null }
+                    val text = result.text.trim()
+                    if (WhisperLanguagePolicy.isJunk(text)) {
+                        note("whisper window dropped as junk")
+                        null
+                    } else {
+                        sticky.accept(lang)
+                        text
+                    }
                 }
             } finally {
                 samples.fill(0f)
@@ -118,6 +147,7 @@ class SherpaWhisperAsr internal constructor(
             note: (String) -> Unit,
             onLabel: (String) -> Unit,
             threads: Int = WHISPER_THREADS,
+            languageSetting: () -> String = { WhisperLanguagePolicy.AUTO },
         ): Pair<SherpaWhisperAsr?, String> {
             val root = runCatching { ctx.getExternalFilesDir(null) }.getOrNull()
                 ?: return null to "ASR: whisper model missing (no external files dir)"
@@ -132,7 +162,7 @@ class SherpaWhisperAsr internal constructor(
                 try {
                     val rec = openRecognizer(files, threads)
                     val fallback = if (files.size == "base") set.tiny else null
-                    val engine = SherpaWhisperAsr(files, fallback, note, onLabel, threads, rec)
+                    val engine = SherpaWhisperAsr(files, fallback, note, onLabel, threads, rec, languageSetting)
                     val detail = if (files.size != "base" && set.base != null) {
                         val quant = if (files.int8) "int8" else "fp32"
                         "ASR ready: whisper ${files.size} $quant, $threads threads (base failed to open: ${lastError?.javaClass?.simpleName ?: "unknown"})"
@@ -168,7 +198,11 @@ class SherpaWhisperAsr internal constructor(
             return OfflineRecognizer(assetManager = null, config = config)
         }
 
-        private fun decode(rec: OfflineRecognizer, samples: FloatArray, sampleRateHz: Int): OfflineRecognizerResult {
+        private fun decode(rec: OfflineRecognizer, samples: FloatArray, sampleRateHz: Int, language: String): OfflineRecognizerResult {
+            val cfg = rec.config
+            if (cfg.modelConfig.whisper.language != language) {
+                rec.setConfig(cfg.copy(modelConfig = cfg.modelConfig.copy(whisper = cfg.modelConfig.whisper.copy(language = language))))
+            }
             val stream: OfflineStream = rec.createStream()
             try {
                 stream.acceptWaveform(samples, sampleRateHz)

@@ -41,6 +41,8 @@ data class SettingsState(
     val audioSource: String = "VOICE_RECOGNITION",
     /** "vosk" (default) or "whisper". Missing Whisper files fall back to Vosk, then no ASR. */
     val asrEngine: String = "vosk",
+    /** Whisper decode language: "auto" (hi/en/mr), "hi", "en" or "mr". */
+    val speechLanguage: String = "auto",
     val companionEnabled: Boolean = false,
     val companionToken: String = "",
 ) {
