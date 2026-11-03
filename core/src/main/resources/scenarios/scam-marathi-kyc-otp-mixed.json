@@ -1,0 +1,58 @@
+{
+  "id": "scam-marathi-kyc-otp-mixed",
+  "kind": "scam",
+  "description": "Mixed Marathi and English KYC call: Devanagari freeze and OTP ask, plus romanised 'pin sanga' and the English word KYC. No AnyDesk event, so remote-access override cannot carry the pause.",
+  "events": [
+    {
+      "t": 0,
+      "type": "call_started",
+      "number": "+91 98765 44003",
+      "in_contacts": false
+    },
+    {
+      "t": 5,
+      "type": "transcript",
+      "text": "Sir, मी बँक अधिकारी बोलतोय. Your KYC update बाकी आहे, तुमची केवायसी झालेली नाही. तुमचं खातं गोठवलं जाईल.",
+      "speaker": "caller"
+    },
+    {
+      "t": 25,
+      "type": "transcript",
+      "text": "Please ओटीपी सांगा आणि pin sanga. ताबडतोब पैसे ट्रान्सफर करा. कोणालाही सांगू नका.",
+      "speaker": "caller"
+    },
+    {
+      "t": 45,
+      "type": "transcript",
+      "text": "नाहीतर खाते गोठवले जाईल. यूपीआय पिन सांगा.",
+      "speaker": "caller"
+    },
+    {
+      "t": 70,
+      "type": "payment",
+      "app": "Google Pay",
+      "stage": "opened"
+    },
+    {
+      "t": 80,
+      "type": "payment",
+      "app": "Google Pay",
+      "stage": "amount_entered",
+      "amount": 40000,
+      "payee": "KYC Update Hold"
+    },
+    {
+      "t": 90,
+      "type": "payment",
+      "app": "Google Pay",
+      "stage": "pin_screen",
+      "amount": 40000,
+      "payee": "KYC Update Hold"
+    }
+  ],
+  "expect": {
+    "min_tier": 2,
+    "min_tier_at_payment": 2,
+    "pause_before_pin": true
+  }
+}

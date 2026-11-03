@@ -1,0 +1,58 @@
+{
+  "id": "scam-marathi-digital-arrest-devanagari",
+  "kind": "scam",
+  "description": "Digital arrest in Marathi Devanagari. Spellings that Hindi entries miss (सीबीआय, अटकेत, खातं गोठव, सांगू नका, ताबडतोब, ट्रान्सफर). No dictated UPI, so the pause has to come from the lexicon plus the call.",
+  "events": [
+    {
+      "t": 0,
+      "type": "call_started",
+      "number": "+91 98765 44001",
+      "in_contacts": false
+    },
+    {
+      "t": 5,
+      "type": "transcript",
+      "text": "मी सीबीआय अधिकारी बोलतोय. तुम्ही अटकेत आहात. तुमचं खातं गोठवलं जाईल. कोणालाही सांगू नका. ताबडतोब पैसे ट्रान्सफर करा.",
+      "speaker": "caller"
+    },
+    {
+      "t": 25,
+      "type": "transcript",
+      "text": "मी मुंबई सायबर सेलचा इन्स्पेक्टर नाही. तुमच्या नावावर गुन्हा दाखल झाला आहे. कॉल कट करू नका.",
+      "speaker": "caller"
+    },
+    {
+      "t": 45,
+      "type": "transcript",
+      "text": "पडताळणी रक्कम पन्नास हजार खात्यात जमा करा. नाहीतर खाते गोठवले जाईल.",
+      "speaker": "caller"
+    },
+    {
+      "t": 70,
+      "type": "payment",
+      "app": "Google Pay",
+      "stage": "opened"
+    },
+    {
+      "t": 80,
+      "type": "payment",
+      "app": "Google Pay",
+      "stage": "amount_entered",
+      "amount": 50000,
+      "payee": "Sharma Verification"
+    },
+    {
+      "t": 90,
+      "type": "payment",
+      "app": "Google Pay",
+      "stage": "pin_screen",
+      "amount": 50000,
+      "payee": "Sharma Verification"
+    }
+  ],
+  "expect": {
+    "min_tier": 2,
+    "min_tier_at_payment": 2,
+    "pause_before_pin": true
+  }
+}

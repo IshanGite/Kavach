@@ -9,6 +9,7 @@ import com.kavach.core.risk.RuleCode
 import com.kavach.core.risk.Tier
 import com.kavach.core.state.SessionState
 
+/** Profile language for overlay and TTS. Marathi transcripts reuse English or Hindi; there is no Marathi copy. */
 enum class Lang(val tag: String) { EN("en-IN"), HI("hi-IN") }
 
 data class TrustedContact(val name: String, val number: String, val relation: String = "")

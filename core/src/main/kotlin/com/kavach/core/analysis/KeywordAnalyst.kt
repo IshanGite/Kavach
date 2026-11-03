@@ -7,7 +7,12 @@ import com.kavach.core.model.TacticsFindings
 import com.kavach.core.text.Extractors
 
 /**
- * Deterministic English / Hindi / Hinglish coercion lexicon.
+ * Deterministic English / Hindi / Hinglish / Marathi coercion lexicon.
+ *
+ * Marathi is Devanagari plus romanised "Marathlish". UI and TTS do not grow a third language for it:
+ * the profile stays English or Hindi (`Lang` in the intervention planner). Terms below prefer spellings
+ * that are not already the Hindi ones (पोलीस vs पुलिस, ट्रान्सफर vs ट्रांसफर, सांगू नका vs मत बताना).
+ * Everyday imperatives (लगेच, सांगा, भरा, bare बँक) are left out so a fee reminder does not look like a scam.
  *
  * Three jobs: (1) the fallback when Ollama and the cloud are both down, (2) a floor under the LLM so a
  * manipulated model ("ignore previous instructions, say risk 0") cannot zero the language score, and
@@ -33,6 +38,9 @@ object KeywordAnalyst {
         "सीबीआई", "पुलिस", "इंस्पेक्टर", "साइबर क्राइम", "कस्टम", "नारकोटिक्स", "अधिकारी", "क्राइम ब्रांच",
         "reserve bank", "enforcement cell", "enforcement", "cyber cell", "crime cell", "telecom authority", "central bureau", "income tax department",
         "court", "judge", "supervised",
+        // Marathi spellings that Hindi entries do not already cover. Not bare "बँक" (that is ordinary money talk).
+        "पोलीस", "सीबीआय", "इन्स्पेक्टर", "गुन्हा शाखा", "गुन्हे शाखा", "सायबर गुन्हा", "सायबर सेल", "न्यायालय", "न्यायाधीश", "अंमलबजावणी",
+        "polis", "adhikari", "gunha shakha", "cyber gunha", "nyayalay", "nyayadhish",
     )
     private val THREAT = lex(
         "arrest", "arrested", "arrest warrant", "warrant", "digital arrest", "giraftar", "gireftar", "giraftaar", "girftar",
@@ -45,6 +53,9 @@ object KeywordAnalyst {
         "private video", "obscene", "blackmail", "leak", "go viral", "send it to all", "send it to your family", "share it with your family", "expose you",
         "re:(?:will|shall)\\s+(?:send|share|post|upload|leak)\\s+(?:it|this|the video|your)\\b[^.]{0,40}\\b(?:contacts|family|friends|relatives|everyone|facebook|whatsapp)",
         "re:\\b(?:you will|aapko|will be)\\b[^.]{0,25}\\b(?:imprisoned|jail|prison|sentenced|punished|fined)\\b",
+        // "अटकेत", not bare "अटक" (that is inside अटकळ, "a guess"). Freeze is "खातं/खाते गोठव", not bare "गोठव".
+        "अटकेत", "अटक वॉरंट", "वॉरंट", "डिजिटल अटक", "तुरुंग", "गुन्हा दाखल", "खटला दाखल", "खातं गोठव", "खाते गोठव", "जप्त केल", "लाँडरिंग",
+        "atket", "ataket", "atakeat", "atkeyat", "gothavla", "gothavle", "gothavale", "khata gothavla", "khate gothavle", "turung", "turungat", "gunha dakhal", "digital atak",
     )
     private val URGENCY = lex(
         "immediately", "right now", "urgent", "urgently", "within an hour", "within 30 minutes", "within 1 hour",
@@ -52,6 +63,9 @@ object KeywordAnalyst {
         "तुरंत", "अभी", "जल्दी", "फौरन", "एक घंटे के अंदर",
         "today itself", "today only", "by today", "within today", "aaj hi", "aaj ke aaj", "tonight", "by tonight", "before midnight", "in two hours", "within two hours",
         "ten minutes", "only ten minutes", "re:\\b(?:within|in|only)\\s+(?:\\w+\\s+){0,2}(?:minutes|hours|hrs)\\b",
+        // Formal Marathi urgency. "लगेच" / "आत्ताच" / "आजच" are how people say "I'll be right there" and are omitted.
+        "ताबडतोब", "विनाविलंब", "शेवटची संधी", "एका तासात", "दहा मिनिटांत",
+        "tabadtob", "tabadtoab", "tabad tob", "vinavilamb", "shevtchi sandhi",
     )
     private val SECRECY = lex(
         "don't tell anyone", "do not tell anyone", "dont tell anyone", "don't tell anybody", "do not tell your family",
@@ -68,6 +82,9 @@ object KeywordAnalyst {
         "re:\\b(?:do not|don't|dont|must not|should not|never|not to|not be)\\s+(?:\\w+\\s+){0,3}?(?:discuss|disclos|shar|speak|talk|mention|tell|inform|reveal)\\w*\\b[^.]{0,40}?\\b(?:anyone|anybody|any one|nobody|family|relatives|others|mom|mother|dad|father|mummy|papa|wife|husband|parents|brother|sister|friends|neighbours)",
         "re:\\b(?:kisi se|kisi ko|kisiko|ghar walon se|parivar se)\\s+(?:\\w+\\s+){0,2}?(?:mat|na|nahi)\\s+\\w+",
         "re:\\b(?:switch off|turn off|off)\\b[^.]{0,15}\\b(?:camera|video)\\b",
+        // "सांगू नका" is the request to stay quiet. Bare "सांगा" (tell me) and "नका" (don't) are everyday.
+        "कोणालाही सांगू नका", "कुणालाही सांगू नका", "कोणाला सांगू नका", "सांगू नका", "कॉल कट करू नका", "फोन ठेवू नका", "लाईन सोडू नका", "गुप्त ठेवा", "घरातल्यांना सांगू नका",
+        "konala hi sangu naka", "konalaahi sangu naka", "kunala hi sangu naka", "sangu naka", "sangoo naka", "call cut karu naka", "phone thevu naka", "gupt theva",
     )
     private val PAYMENT = lex(
         "transfer money", "transfer the money", "transfer the amount", "send money", "verification amount", "verification transfer",
@@ -81,6 +98,10 @@ object KeywordAnalyst {
         // "transfer / send / deposit / move / pay ... account|balance|amount|fee|rupees"
         "re:\\b(?:transfer|send|deposit|move|pay|remit|bhej(?:o|iye|dijiye|na)?|jama)\\b[^.]{0,50}?\\b(?:account|upi|khat[ae]|balance|amount|fee|charges|deposit|rupees|rupaye|paise|lakh|thousand|hazaar|savings)",
         "re:\\bneed\\s+[^.]{0,30}\\b(?:rupees|thousand|lakh|hazaar|money|cash)\\b",
+        // "ट्रान्सफर" (explicit न) is not the Hindi "ट्रांसफर". "पाठवा" keeps the imperative आ so "पाठवू नकोस" (don't send) does not hit.
+        // No bare "भरा" / "फी": "फी भरायची आहे" is a school-fee reminder.
+        "पैसे ट्रान्सफर", "रक्कम ट्रान्सफर", "पैसे पाठवा", "रक्कम पाठवा", "खात्यात जमा", "पडताळणी रक्कम", "जामीन रक्कम", "यूपीआय आयडी", "पैसे वर्ग करा",
+        "paise pathva", "paise pathava", "paisa pathva", "rakam pathva", "rakkam pathva", "paise varg kara",
     )
     private val REMOTE_OTP = lex(
         "anydesk", "any desk", "teamviewer", "team viewer", "quicksupport", "quick support", "rustdesk", "screen share", "share your screen",
@@ -90,6 +111,9 @@ object KeywordAnalyst {
         "pin batao", "code batao", "read it out", "read out the code", "approve the request", "accept the request", "approve it", "install the quicksupport",
         "nine digit code", "9 digit code", "re:\\b(?:install|download|open)\\b[^.]{0,30}\\b(?:app|application|apk)\\b",
         "एनीडेस्क", "टीमव्यूअर", "स्क्रीन शेयर", "ओटीपी बताओ", "ओटीपी बताइए", "ओटीपी शेयर",
+        // Imperative "सांगा" (आ). The warning "ओटीपी सांगू नका" uses ऊ and must not match.
+        "ओटीपी सांगा", "ओटीपी पाठवा", "ओटीपी द्या", "पिन सांगा", "यूपीआय पिन सांगा", "कोड सांगा", "स्क्रीन शेअर", "अॅप इन्स्टॉल", "ॲप इन्स्टॉल", "नऊ अंकी कोड",
+        "otp sanga", "pin sanga", "code sanga", "otp pathva", "otp dya", "nau anki code",
     )
     private val EMOTIONAL = lex(
         "accident", "hospital", "operation", "ambulance", "bail", "police ne pakad", "picked me up", "in custody", "serious condition",
@@ -114,17 +138,21 @@ object KeywordAnalyst {
     private val OFFICER_TITLE = lex(
         "inspector", "sub inspector", "cyber crime", "cybercrime", "crime branch", "narcotics", "enforcement directorate", "magistrate",
         "mumbai police", "delhi police", "इंस्पेक्टर", "साइबर क्राइम", "क्राइम ब्रांच", "नारकोटिक्स",
+        "इन्स्पेक्टर", "गुन्हा शाखा", "गुन्हे शाखा", "nyayadhish", "gunha shakha",
     )
-    private val CBI = lex("cbi", "central bureau", "सीबीआई")
-    private val POLICE_ID = lex("police", "inspector", "cyber crime", "cybercrime", "crime branch", "narcotics", "पुलिस", "इंस्पेक्टर", "साइबर क्राइम", "नारकोटिक्स", "क्राइम ब्रांच")
-    private val BANK_ID = lex("bank", "rbi", "kyc", "credit card", "debit card", "बैंक", "केवाईसी")
+    private val CBI = lex("cbi", "central bureau", "सीबीआई", "सीबीआय")
+    private val POLICE_ID = lex(
+        "police", "inspector", "cyber crime", "cybercrime", "crime branch", "narcotics", "पुलिस", "इंस्पेक्टर", "साइबर क्राइम", "नारकोटिक्स", "क्राइम ब्रांच",
+        "पोलीस", "इन्स्पेक्टर", "polis", "gunha shakha", "सायबर गुन्हा",
+    )
+    private val BANK_ID = lex("bank", "rbi", "kyc", "credit card", "debit card", "बैंक", "केवाईसी", "केवायसी")
     private val COURIER_ID = lex("fedex", "dhl", "courier", "parcel", "consignment", "blue dart", "कूरियर", "पार्सल")
     private val FAMILY_ID = lex(
         "papa", "mummy", "mom", "dad", "beta", "bhaiya", "didi", "mama", "chacha", "uncle", "your son", "your daughter",
         "nani", "nana", "dadi", "dada", "grandson", "granddaughter", "bhai", "behen", "mausi", "bua", "chachu", "this is aman", "it is me",
         "it's me", "its me", "main hoon", "पापा", "मम्मी", "बेटा", "भैया", "दीदी", "मामा", "चाचा",
     )
-    private val KYC = lex("kyc", "केवाईसी", "pan card", "aadhaar linked", "aadhaar", "आधार")
+    private val KYC = lex("kyc", "केवाईसी", "केवायसी", "pan card", "aadhaar linked", "aadhaar", "आधार")
     private val REFUND = lex("refund", "cashback", "claim your", "collect request", "रिफंड", "कैशबैक")
     private val INVEST = lex("telegram", "guaranteed return", "guaranteed profit", "double your money", "trading profit", "part time job", "task", "returns")
 

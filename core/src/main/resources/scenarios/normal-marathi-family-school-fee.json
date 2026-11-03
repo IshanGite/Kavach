@@ -1,0 +1,43 @@
+{
+  "id": "normal-marathi-family-school-fee",
+  "kind": "normal",
+  "description": "Mother calls from the school office line, which is not a saved contact, about the term fee. The words are ordinary Marathi (लगेच, फी भरायची, पैसे पाठवू नकोस) and must not be read as a scam. Unknown number plus a new large payee may nudge, the same as the English school-fee call; it must not pause.",
+  "events": [
+    {
+      "t": 0,
+      "type": "call_started",
+      "number": "+91 80333 22110",
+      "in_contacts": false,
+      "name": "Aai"
+    },
+    {
+      "t": 5,
+      "type": "transcript",
+      "text": "आई बोलतेय. शाळेची फी पंधरा हजार बाकी आहे. लगेच भरायची नाही, दहा तारखेपर्यंत भरता येईल. पैसे पाठवू नकोस, संध्याकाळी घरी बोलूया.",
+      "speaker": "caller"
+    },
+    {
+      "t": 40,
+      "type": "transcript",
+      "text": "मुलाचे नाव आरव. कार्यालयातून भरता येईल. घाई काही नाही.",
+      "speaker": "caller"
+    },
+    {
+      "t": 70,
+      "type": "payment",
+      "app": "Google Pay",
+      "stage": "opened"
+    },
+    {
+      "t": 80,
+      "type": "payment",
+      "app": "Google Pay",
+      "stage": "amount_entered",
+      "amount": 15000,
+      "payee": "Greenfield School Fees"
+    }
+  ],
+  "expect": {
+    "max_tier": 1
+  }
+}

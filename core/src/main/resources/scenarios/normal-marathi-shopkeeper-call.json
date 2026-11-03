@@ -1,0 +1,45 @@
+{
+  "id": "normal-marathi-shopkeeper-call",
+  "kind": "normal",
+  "description": "Kirana owner calls from a number that is not saved, in Marathi, and the user pays the usual saved shop. Benign Marathi must keep this invisible: no nudge and no pause.",
+  "events": [
+    {
+      "t": 0,
+      "type": "call_started",
+      "number": "+91 98450 22110",
+      "in_contacts": false,
+      "name": "Ramesh"
+    },
+    {
+      "t": 5,
+      "type": "transcript",
+      "text": "रामेश किराणा बोलतोय. तुमची साखर, तांदूळ आणि तेलाची बाटली तयार ठेवली आहे. एकूण दोनशे रुपये झाले. दुकानात या नाहीतर फोनपे करून टाका.",
+      "speaker": "caller"
+    },
+    {
+      "t": 30,
+      "type": "payment",
+      "app": "PhonePe",
+      "stage": "opened"
+    },
+    {
+      "t": 36,
+      "type": "payment",
+      "app": "PhonePe",
+      "stage": "amount_entered",
+      "amount": 200,
+      "payee": "ramesh.kirana@ybl"
+    },
+    {
+      "t": 42,
+      "type": "payment",
+      "app": "PhonePe",
+      "stage": "pin_screen",
+      "amount": 200,
+      "payee": "ramesh.kirana@ybl"
+    }
+  ],
+  "expect": {
+    "max_tier": 0
+  }
+}

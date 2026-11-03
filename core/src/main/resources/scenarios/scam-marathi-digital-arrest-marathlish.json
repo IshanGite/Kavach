@@ -1,0 +1,58 @@
+{
+  "id": "scam-marathi-digital-arrest-marathlish",
+  "kind": "scam",
+  "description": "Same digital-arrest script in romanised Marathi (Marathlish): atket, gothavla, sangu naka, tabadtob, paise pathva. English 'transfer' and 'paise bhejo' are deliberately not used.",
+  "events": [
+    {
+      "t": 0,
+      "type": "call_started",
+      "number": "+91 98765 44002",
+      "in_contacts": false
+    },
+    {
+      "t": 5,
+      "type": "transcript",
+      "text": "Mi CBI adhikari boltoy. Tumhi atket ahat. Tumcha khata gothavla jaeel. Konala hi sangu naka. Tabadtob paise pathva.",
+      "speaker": "caller"
+    },
+    {
+      "t": 25,
+      "type": "transcript",
+      "text": "Call cut karu naka. He digital atak ahe, gunha dakhal zala. Otp sanga.",
+      "speaker": "caller"
+    },
+    {
+      "t": 45,
+      "type": "transcript",
+      "text": "Verification sathi rakam pathva. Paise pathava, aata.",
+      "speaker": "caller"
+    },
+    {
+      "t": 70,
+      "type": "payment",
+      "app": "PhonePe",
+      "stage": "opened"
+    },
+    {
+      "t": 80,
+      "type": "payment",
+      "app": "PhonePe",
+      "stage": "amount_entered",
+      "amount": 50000,
+      "payee": "Verify Hold"
+    },
+    {
+      "t": 90,
+      "type": "payment",
+      "app": "PhonePe",
+      "stage": "pin_screen",
+      "amount": 50000,
+      "payee": "Verify Hold"
+    }
+  ],
+  "expect": {
+    "min_tier": 2,
+    "min_tier_at_payment": 2,
+    "pause_before_pin": true
+  }
+}

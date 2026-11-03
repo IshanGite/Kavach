@@ -82,6 +82,51 @@ class KeywordAnalystTest {
     }
 
     @Test
+    fun `marathi devanagari romanised and mixed scripts hit the same tactic buckets`() {
+        val dv = "मी सीबीआय अधिकारी बोलतोय. तुम्ही अटकेत आहात. तुमचं खातं गोठवलं जाईल. कोणालाही सांगू नका. ताबडतोब पैसे ट्रान्सफर करा. ओटीपी सांगा."
+        val rom = "Mi CBI adhikari boltoy. Tumhi atket ahat. Tumcha khata gothavla jaeel. Konala hi sangu naka. Tabadtob paise pathva. Otp sanga."
+        val mix = "Sir, मी बँक अधिकारी बोलतोय. Your KYC update बाकी आहे. तुमचं खातं गोठवलं जाईल. Please ओटीपी सांगा आणि pin sanga. ताबडतोब पैसे ट्रान्सफर करा. कोणालाही सांगू नका."
+        listOf(dv, rom, mix).forEach { text ->
+            val f = KeywordAnalyst.analyze(text)
+            assertTrue(f.llmRisk >= 70, "risk ${f.llmRisk} quotes ${f.evidenceQuotes} for $text")
+            assertTrue(f.tactics.authorityImpersonation >= 0.65, text)
+            assertTrue(f.tactics.threatOfArrestOrLegalAction >= 0.65, text)
+            assertTrue(f.tactics.urgencyOrDeadline >= 0.65, text)
+            assertTrue(f.tactics.secrecyOrIsolation >= 0.65, text)
+            assertTrue(f.tactics.paymentOrTransferRequest >= 0.65, text)
+            assertTrue(f.tactics.remoteAccessOrOtpRequest >= 0.65, text)
+            f.evidenceQuotes.forEach { q -> assertTrue(text.contains(q, ignoreCase = true), q) }
+        }
+        assertEquals(ClaimedIdentity.CBI_OFFICER, KeywordAnalyst.analyze(dv).claimedIdentity)
+        assertEquals(ScamType.DIGITAL_ARREST, KeywordAnalyst.analyze(dv).scamType)
+        assertEquals(ClaimedIdentity.BANK, KeywordAnalyst.analyze(mix).claimedIdentity)
+    }
+
+    @Test
+    fun `everyday marathi and an otp warning are not a payment scam`() {
+        // Same sentences as normal-marathi-family-school-fee and normal-marathi-shopkeeper-call, plus romanised twins.
+        // "लगेच", "फी भरायची" and "पैसे पाठवू नकोस" are deliberate near-misses (hurry, pay, don't send).
+        listOf(
+            "आई बोलतेय. शाळेची फी पंधरा हजार बाकी आहे. लगेच भरायची नाही, दहा तारखेपर्यंत भरता येईल. पैसे पाठवू नकोस, संध्याकाळी घरी बोलूया.",
+            "रामेश किराणा बोलतोय. तुमची साखर, तांदूळ आणि तेलाची बाटली तयार ठेवली आहे. एकूण दोनशे रुपये झाले. दुकानात या नाहीतर फोनपे करून टाका.",
+            "Aai boltey, school chi dusri term fee pandhra hajar baaki ahe. Dahave tarikheparyant bharaychi ahe. Ghai nahi, sandhyakali boluya.",
+            "Ramesh kirana boltoy. Sakhar aani tandul tayaar ahe. Donashe rupaye. PhonePe karun taka.",
+        ).forEach { text ->
+            val f = KeywordAnalyst.analyze(text)
+            assertEquals(0, f.llmRisk, "quotes ${f.evidenceQuotes} for $text")
+        }
+        // "सांगू नका" is secrecy (don't tell). It must not also be read as "tell me the OTP".
+        listOf(
+            "ओटीपी सांगू नका आणि पिन सांगू नका.",
+            "otp sangu naka, pin sangoo naka",
+        ).forEach { text ->
+            val f = KeywordAnalyst.analyze(text)
+            assertEquals(0.0, f.tactics.remoteAccessOrOtpRequest, text)
+            assertTrue(f.llmRisk < 25, "risk ${f.llmRisk} quotes ${f.evidenceQuotes} for $text")
+        }
+    }
+
+    @Test
     fun `a single trait never reaches pause territory on its own`() {
         listOf("urgent please call back", "I am in the hospital", "tell me your plan, police station is near", "send the money to the shop").forEach {
             assertTrue(KeywordAnalyst.analyze(it).llmRisk < 40, it)
