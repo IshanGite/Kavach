@@ -12,7 +12,7 @@ class OllamaAutostartTest {
     @Test
     fun `serve command is the termux one-liner and binds loopback only`() {
         assertEquals(
-            "pgrep -x ollama >/dev/null || (OLLAMA_HOST=127.0.0.1:11434 OLLAMA_KEEP_ALIVE=24h nohup ollama serve >/dev/null 2>&1 &)",
+            "curl -sf 127.0.0.1:11434 >/dev/null 2>&1 || (termux-wake-lock 2>/dev/null; OLLAMA_HOST=127.0.0.1:11434 OLLAMA_KEEP_ALIVE=24h nohup ollama serve >/dev/null 2>&1 &)",
             OLLAMA_SERVE_SHELL,
         )
         assertTrue(OLLAMA_SERVE_SHELL.contains("127.0.0.1:11434"))

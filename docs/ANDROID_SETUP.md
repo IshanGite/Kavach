@@ -56,12 +56,12 @@ JDK 17 for Gradle: `export JAVA_HOME=$(/usr/libexec/java_home -v 17)`.
    mkdir -p ~/.termux/boot
    cat > ~/.termux/boot/start-ollama << 'EOF'
    #!/data/data/com.termux/files/usr/bin/bash
-   pgrep -x ollama >/dev/null || (OLLAMA_HOST=127.0.0.1:11434 OLLAMA_KEEP_ALIVE=24h nohup ollama serve >/dev/null 2>&1 &)
+   curl -sf 127.0.0.1:11434 >/dev/null 2>&1 || (termux-wake-lock 2>/dev/null; OLLAMA_HOST=127.0.0.1:11434 OLLAMA_KEEP_ALIVE=24h nohup ollama serve >/dev/null 2>&1 &)
    EOF
    chmod +x ~/.termux/boot/start-ollama
    ```
 
-   Exempt Termux:Boot from battery optimisation too. Both paths use `pgrep`, so they will not start two servers. `pgrep` comes from `procps` (`pkg install procps`) if the bootstrap does not have it.
+   Exempt Termux:Boot from battery optimisation too. Both paths check the port first, so they will not start two servers.
 5. Grant in order: Phone/Call log/Contacts, Microphone, Notifications, SMS, "Display over other apps", Notification access, Accessibility service, ignore battery optimisation.
 6. Verify the foreground package names of the UPI apps on THIS phone: `adb shell dumpsys window | grep mCurrentFocus` while each app is open,
    then edit `core/src/main/resources/payment_apps.json` if they differ.

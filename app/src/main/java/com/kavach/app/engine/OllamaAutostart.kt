@@ -8,7 +8,7 @@ const val OLLAMA_AUTOSTART_MIN_INTERVAL_MS = 60_000L
 
 /** Exact command Termux runs. Starts `ollama serve` on loopback only when it is not already running. */
 const val OLLAMA_SERVE_SHELL =
-    "pgrep -x ollama >/dev/null || (OLLAMA_HOST=127.0.0.1:11434 OLLAMA_KEEP_ALIVE=24h nohup ollama serve >/dev/null 2>&1 &)"
+    "curl -sf 127.0.0.1:11434 >/dev/null 2>&1 || (termux-wake-lock 2>/dev/null; OLLAMA_HOST=127.0.0.1:11434 OLLAMA_KEEP_ALIVE=24h nohup ollama serve >/dev/null 2>&1 &)"
 
 enum class OllamaAutostartTrigger {
     /** Protection was just switched on (including process restart with protection already on). */

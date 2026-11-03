@@ -70,7 +70,7 @@ touch "$props"
 grep -v '^allow-external-apps=' "$props" > "$props.tmp" || true
 echo 'allow-external-apps=true' >> "$props.tmp"
 mv "$props.tmp" "$props"
-echo 'pgrep -x ollama >/dev/null || (OLLAMA_HOST=127.0.0.1:11434 OLLAMA_KEEP_ALIVE=24h nohup ollama serve >/dev/null 2>&1 &)' >> ~/.bashrc
+echo 'curl -sf 127.0.0.1:11434 >/dev/null 2>&1 || (termux-wake-lock 2>/dev/null; OLLAMA_HOST=127.0.0.1:11434 OLLAMA_KEEP_ALIVE=24h nohup ollama serve >/dev/null 2>&1 &)' >> ~/.bashrc
 source ~/.bashrc && sleep 4 && ollama pull gemma3:1b
 ```
 3. Force-stop Termux so it reloads `termux.properties`, then open it once. From the computer: `adb shell am force-stop com.termux`.
@@ -83,11 +83,11 @@ Kavach does not receive `BOOT_COMPLETED`. It starts Ollama when its process is u
 mkdir -p ~/.termux/boot
 cat > ~/.termux/boot/start-ollama << 'EOF'
 #!/data/data/com.termux/files/usr/bin/bash
-pgrep -x ollama >/dev/null || (OLLAMA_HOST=127.0.0.1:11434 OLLAMA_KEEP_ALIVE=24h nohup ollama serve >/dev/null 2>&1 &)
+curl -sf 127.0.0.1:11434 >/dev/null 2>&1 || (termux-wake-lock 2>/dev/null; OLLAMA_HOST=127.0.0.1:11434 OLLAMA_KEEP_ALIVE=24h nohup ollama serve >/dev/null 2>&1 &)
 EOF
 chmod +x ~/.termux/boot/start-ollama
 ```
-Exempt Termux:Boot from battery optimisation. The script and Kavach both use `pgrep`, so they will not start two servers.
+Exempt Termux:Boot from battery optimisation. The script and Kavach both check the port first, so they will not start two servers.
 
 `adb reverse tcp:11434 tcp:11434` uses the same port for a laptop Ollama. Stop the phone's server first (`pkill ollama` in Termux) or the phone process keeps the port.
 
