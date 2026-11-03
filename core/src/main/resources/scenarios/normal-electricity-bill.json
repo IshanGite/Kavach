@@ -1,0 +1,24 @@
+{
+  "id": "normal-electricity-bill",
+  "kind": "normal",
+  "description": "Pay the electricity bill Rs 2,400 to a biller never paid before (new payee, 8x usual, evening).",
+  "events": [
+    {
+      "t": 0,
+      "type": "payment",
+      "app": "Google Pay",
+      "stage": "opened"
+    },
+    {
+      "t": 8,
+      "type": "payment",
+      "app": "Google Pay",
+      "stage": "amount_entered",
+      "amount": 2400,
+      "payee": "BESCOM Electricity Bill"
+    }
+  ],
+  "expect": {
+    "max_tier": 0
+  }
+}

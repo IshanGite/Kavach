@@ -1,0 +1,37 @@
+{
+  "id": "normal-mom-calls-family-emergency-real",
+  "kind": "normal",
+  "description": "Saved mother calls from her saved number about a real hospital visit; user pays the hospital desk. Known caller means no coercion analysis.",
+  "events": [
+    {
+      "t": 0,
+      "type": "call_started",
+      "number": "+91 98200 33344",
+      "in_contacts": true,
+      "name": "Mummy"
+    },
+    {
+      "t": 5,
+      "type": "transcript",
+      "text": "Beta main hospital mein hoon, doctor ne kaha hai thoda paise jama karne hain, abhi aa jao.",
+      "speaker": "caller"
+    },
+    {
+      "t": 60,
+      "type": "payment",
+      "app": "PhonePe",
+      "stage": "opened"
+    },
+    {
+      "t": 70,
+      "type": "payment",
+      "app": "PhonePe",
+      "stage": "amount_entered",
+      "amount": 8000,
+      "payee": "City Hospital Billing"
+    }
+  ],
+  "expect": {
+    "max_tier": 0
+  }
+}

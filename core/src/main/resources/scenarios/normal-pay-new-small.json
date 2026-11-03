@@ -1,0 +1,24 @@
+{
+  "id": "normal-pay-new-small",
+  "kind": "normal",
+  "description": "Pay a new street vendor Rs 80 by QR. New payee alone is nothing.",
+  "events": [
+    {
+      "t": 0,
+      "type": "payment",
+      "app": "PhonePe",
+      "stage": "opened"
+    },
+    {
+      "t": 5,
+      "type": "payment",
+      "app": "PhonePe",
+      "stage": "amount_entered",
+      "amount": 80,
+      "payee": "Fresh Juice Corner"
+    }
+  ],
+  "expect": {
+    "max_tier": 0
+  }
+}

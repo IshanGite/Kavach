@@ -1,0 +1,36 @@
+{
+  "id": "normal-unknown-call-then-pay-saved-payee",
+  "kind": "normal",
+  "description": "A short unknown call (plumber) is still live while the user pays the saved milk dairy Rs 60. At most a nudge.",
+  "events": [
+    {
+      "t": 0,
+      "type": "call_started",
+      "number": "+91 70011 99887",
+      "in_contacts": false
+    },
+    {
+      "t": 5,
+      "type": "transcript",
+      "text": "Sir plumber bol raha hoon, kal subah aaunga, theek hai?",
+      "speaker": "caller"
+    },
+    {
+      "t": 30,
+      "type": "payment",
+      "app": "PhonePe",
+      "stage": "opened"
+    },
+    {
+      "t": 36,
+      "type": "payment",
+      "app": "PhonePe",
+      "stage": "amount_entered",
+      "amount": 60,
+      "payee": "milk.dairy@upi"
+    }
+  ],
+  "expect": {
+    "max_tier": 1
+  }
+}

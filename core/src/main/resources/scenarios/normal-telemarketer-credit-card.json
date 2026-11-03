@@ -1,0 +1,33 @@
+{
+  "id": "normal-telemarketer-credit-card",
+  "kind": "normal",
+  "description": "Telemarketer pitches a credit card for 2 minutes. Annoying, not coercion.",
+  "events": [
+    {
+      "t": 0,
+      "type": "call_started",
+      "number": "+91 80011 22000",
+      "in_contacts": false
+    },
+    {
+      "t": 5,
+      "type": "transcript",
+      "text": "Sir hum bank se bol rahe hain, aapke liye pre approved credit card hai, koi annual fee nahi.",
+      "speaker": "caller"
+    },
+    {
+      "t": 40,
+      "type": "transcript",
+      "text": "Aap interested hain? Main aapko link bhej deta hoon.",
+      "speaker": "caller"
+    },
+    {
+      "t": 120,
+      "type": "call_ended",
+      "duration": 120
+    }
+  ],
+  "expect": {
+    "max_tier": 1
+  }
+}

@@ -1,0 +1,33 @@
+{
+  "id": "normal-unknown-delivery-call-no-payment",
+  "kind": "normal",
+  "description": "Unknown number: a delivery agent asks for directions for 90 seconds. Never above a nudge.",
+  "events": [
+    {
+      "t": 0,
+      "type": "call_started",
+      "number": "+91 70011 22334",
+      "in_contacts": false
+    },
+    {
+      "t": 5,
+      "type": "transcript",
+      "text": "Hello sir, main Zomato delivery se bol raha hoon, aapki building ke gate pe hoon, kaunsi wing hai?",
+      "speaker": "caller"
+    },
+    {
+      "t": 25,
+      "type": "transcript",
+      "text": "Okay sir, main upar aa raha hoon, parcel le lijiye.",
+      "speaker": "caller"
+    },
+    {
+      "t": 90,
+      "type": "call_ended",
+      "duration": 90
+    }
+  ],
+  "expect": {
+    "max_tier": 1
+  }
+}

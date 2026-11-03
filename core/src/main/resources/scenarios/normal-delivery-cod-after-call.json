@@ -1,0 +1,41 @@
+{
+  "id": "normal-delivery-cod-after-call",
+  "kind": "normal",
+  "description": "Delivery agent called, call ended, then the user pays him Rs 499 COD by QR.",
+  "events": [
+    {
+      "t": 0,
+      "type": "call_started",
+      "number": "+91 70011 55667",
+      "in_contacts": false
+    },
+    {
+      "t": 5,
+      "type": "transcript",
+      "text": "Sir main gate pe hoon, cash on delivery hai, QR se de dena.",
+      "speaker": "caller"
+    },
+    {
+      "t": 60,
+      "type": "call_ended",
+      "duration": 60
+    },
+    {
+      "t": 120,
+      "type": "payment",
+      "app": "PhonePe",
+      "stage": "opened"
+    },
+    {
+      "t": 128,
+      "type": "payment",
+      "app": "PhonePe",
+      "stage": "amount_entered",
+      "amount": 499,
+      "payee": "Amazon Delivery Partner"
+    }
+  ],
+  "expect": {
+    "max_tier": 1
+  }
+}

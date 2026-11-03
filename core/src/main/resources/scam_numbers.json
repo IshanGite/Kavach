@@ -1,0 +1,4 @@
+{
+  "_comment": "Local seed blocklist. Numbers are matched on their last 10 digits. These are FICTIONAL demo numbers; replace with real reported numbers (e.g. from Sanchar Saathi / cybercrime reports).",
+  "numbers": ["9000000001", "9000000002", "+85212345678"]
+}

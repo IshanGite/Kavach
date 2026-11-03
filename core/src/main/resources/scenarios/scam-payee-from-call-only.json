@@ -1,0 +1,37 @@
+{
+  "id": "scam-payee-from-call-only",
+  "kind": "scam",
+  "description": "Only signal beyond the call is that the payee ID spoken on the call is the one typed in the app (hard override), small amount.",
+  "events": [
+    {
+      "t": 0,
+      "type": "call_started",
+      "number": "+91 99887 00011",
+      "in_contacts": false
+    },
+    {
+      "t": 5,
+      "type": "transcript",
+      "text": "Sir bas ek chhota verification hai, upi id quick dot help at ybl par paanch hazaar bhej do.",
+      "speaker": "caller"
+    },
+    {
+      "t": 30,
+      "type": "payment",
+      "app": "PhonePe",
+      "stage": "opened"
+    },
+    {
+      "t": 38,
+      "type": "payment",
+      "app": "PhonePe",
+      "stage": "amount_entered",
+      "amount": 5000,
+      "payee": "quick.help@ybl"
+    }
+  ],
+  "expect": {
+    "min_tier": 3,
+    "min_tier_at_payment": 3
+  }
+}

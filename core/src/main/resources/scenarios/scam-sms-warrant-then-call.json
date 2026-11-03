@@ -1,0 +1,44 @@
+{
+  "id": "scam-sms-warrant-then-call",
+  "kind": "scam",
+  "description": "A fake 'arrest warrant' SMS with a link lands, then the call. The flagged SMS adds risk and the message is flagged.",
+  "events": [
+    {
+      "t": 0,
+      "type": "message",
+      "source": "+91 88888 77777",
+      "text": "URGENT: Arrest warrant issued in your name, money laundering case. Verify here https://cbi-verify.xyz/pay or face arrest."
+    },
+    {
+      "t": 120,
+      "type": "call_started",
+      "number": "+91 99001 12233",
+      "in_contacts": false
+    },
+    {
+      "t": 130,
+      "type": "transcript",
+      "text": "Sir main inspector bol raha hoon, aapke warrant ke baare mein. Kisi ko mat batana, abhi paise transfer karo.",
+      "speaker": "caller"
+    },
+    {
+      "t": 170,
+      "type": "payment",
+      "app": "PhonePe",
+      "stage": "opened"
+    },
+    {
+      "t": 180,
+      "type": "payment",
+      "app": "PhonePe",
+      "stage": "amount_entered",
+      "amount": 40000,
+      "payee": "court.fee@ybl"
+    }
+  ],
+  "expect": {
+    "min_tier": 2,
+    "min_tier_at_payment": 2,
+    "message_flagged": true
+  }
+}

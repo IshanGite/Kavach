@@ -1,0 +1,24 @@
+{
+  "id": "normal-large-payment-to-saved-family",
+  "kind": "normal",
+  "description": "Rs 30,000 to the saved son (20x usual). Saved frequent payee, no call: never interrupted.",
+  "events": [
+    {
+      "t": 0,
+      "type": "payment",
+      "app": "PhonePe",
+      "stage": "opened"
+    },
+    {
+      "t": 6,
+      "type": "payment",
+      "app": "PhonePe",
+      "stage": "amount_entered",
+      "amount": 30000,
+      "payee": "rahul.son@okhdfcbank"
+    }
+  ],
+  "expect": {
+    "max_tier": 0
+  }
+}

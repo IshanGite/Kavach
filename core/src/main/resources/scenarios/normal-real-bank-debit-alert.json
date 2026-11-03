@@ -1,0 +1,31 @@
+{
+  "id": "normal-real-bank-debit-alert",
+  "kind": "normal",
+  "description": "A genuine debit alert after paying the saved kirana. Pure informational.",
+  "events": [
+    {
+      "t": 0,
+      "type": "payment",
+      "app": "PhonePe",
+      "stage": "opened"
+    },
+    {
+      "t": 6,
+      "type": "payment",
+      "app": "PhonePe",
+      "stage": "amount_entered",
+      "amount": 200,
+      "payee": "ramesh.kirana@ybl"
+    },
+    {
+      "t": 20,
+      "type": "message",
+      "source": "VM-HDFCBK",
+      "text": "Rs 200.00 debited from a/c XX1234 on 03-11-26 to VPA ramesh.kirana@ybl. -HDFC Bank"
+    }
+  ],
+  "expect": {
+    "max_tier": 0,
+    "message_flagged": false
+  }
+}

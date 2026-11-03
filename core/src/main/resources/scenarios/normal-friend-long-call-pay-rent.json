@@ -1,0 +1,37 @@
+{
+  "id": "normal-friend-long-call-pay-rent",
+  "kind": "normal",
+  "description": "40-minute call with a saved friend, then pays the landlord Rs 25,000 (new payee, large). Long call with a KNOWN person is not coercion.",
+  "events": [
+    {
+      "t": 0,
+      "type": "call_started",
+      "number": "+91 98100 99887",
+      "in_contacts": true,
+      "name": "Vikram"
+    },
+    {
+      "t": 60,
+      "type": "transcript",
+      "text": "Yaar kal match dekhna hai, ghar aa jaana. Aur rent bhi dena hai mujhe aaj.",
+      "speaker": "caller"
+    },
+    {
+      "t": 2400,
+      "type": "payment",
+      "app": "PhonePe",
+      "stage": "opened"
+    },
+    {
+      "t": 2412,
+      "type": "payment",
+      "app": "PhonePe",
+      "stage": "amount_entered",
+      "amount": 25000,
+      "payee": "Mr Kulkarni Landlord"
+    }
+  ],
+  "expect": {
+    "max_tier": 0
+  }
+}

@@ -1,0 +1,51 @@
+{
+  "id": "scam-digital-arrest-night-call",
+  "kind": "scam",
+  "description": "2:10 am call: odd hour adds risk. Same coercion signature.",
+  "start_local": "2026-11-04T02:10:00",
+  "events": [
+    {
+      "t": 0,
+      "type": "call_started",
+      "number": "+91 99887 76655",
+      "in_contacts": false
+    },
+    {
+      "t": 6,
+      "type": "transcript",
+      "text": "Police station se bol raha hoon. Aapke khilaaf arrest warrant nikla hai, drugs ka case hai.",
+      "speaker": "caller"
+    },
+    {
+      "t": 30,
+      "type": "transcript",
+      "text": "Kisi ko mat batana, call mat kaatna. Abhi turant paise transfer karo nahi toh giraftaar kar lenge.",
+      "speaker": "caller"
+    },
+    {
+      "t": 60,
+      "type": "payment",
+      "app": "Paytm",
+      "stage": "opened"
+    },
+    {
+      "t": 70,
+      "type": "payment",
+      "app": "Paytm",
+      "stage": "amount_entered",
+      "amount": 30000,
+      "payee": "legal.cell@paytm"
+    },
+    {
+      "t": 80,
+      "type": "payment",
+      "app": "Paytm",
+      "stage": "pin_screen"
+    }
+  ],
+  "expect": {
+    "min_tier": 2,
+    "min_tier_at_payment": 2,
+    "pause_before_pin": true
+  }
+}

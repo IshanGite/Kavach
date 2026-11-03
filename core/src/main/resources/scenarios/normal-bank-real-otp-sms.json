@@ -1,0 +1,17 @@
+{
+  "id": "normal-bank-real-otp-sms",
+  "kind": "normal",
+  "description": "A genuine bank OTP SMS arrives while idle. Not a scam message, no intervention.",
+  "events": [
+    {
+      "t": 0,
+      "type": "message",
+      "source": "VM-HDFCBK",
+      "text": "482913 is your OTP for transaction of Rs 499.00 at Amazon. Do not share this OTP with anyone. -HDFC Bank"
+    }
+  ],
+  "expect": {
+    "max_tier": 0,
+    "message_flagged": false
+  }
+}

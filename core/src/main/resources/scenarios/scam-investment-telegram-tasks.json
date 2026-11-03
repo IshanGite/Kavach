@@ -1,0 +1,68 @@
+{
+  "id": "scam-investment-telegram-tasks",
+  "kind": "scam",
+  "description": "Telegram 'part-time task' scam: repeated small deposits to new payees, no live call. Not yet modelled (needs a repeated-new-payee rule).",
+  "known_gap": "Investment/task scams without a live call: the engine has no repeated-new-payee or escalating-deposit rule yet.",
+  "events": [
+    {
+      "t": 0,
+      "type": "message",
+      "source": "+91 77777 66666",
+      "text": "Part time job: earn Rs 5000 daily on Telegram task group. Guaranteed profit. Deposit Rs 1000 to start."
+    },
+    {
+      "t": 60,
+      "type": "payment",
+      "app": "PhonePe",
+      "stage": "opened"
+    },
+    {
+      "t": 70,
+      "type": "payment",
+      "app": "PhonePe",
+      "stage": "amount_entered",
+      "amount": 1000,
+      "payee": "task.deposit1@ybl"
+    },
+    {
+      "t": 100,
+      "type": "payment_dismissed"
+    },
+    {
+      "t": 900,
+      "type": "payment",
+      "app": "PhonePe",
+      "stage": "opened"
+    },
+    {
+      "t": 910,
+      "type": "payment",
+      "app": "PhonePe",
+      "stage": "amount_entered",
+      "amount": 3000,
+      "payee": "task.deposit2@ybl"
+    },
+    {
+      "t": 940,
+      "type": "payment_dismissed"
+    },
+    {
+      "t": 1800,
+      "type": "payment",
+      "app": "PhonePe",
+      "stage": "opened"
+    },
+    {
+      "t": 1810,
+      "type": "payment",
+      "app": "PhonePe",
+      "stage": "amount_entered",
+      "amount": 10000,
+      "payee": "task.deposit3@ybl"
+    }
+  ],
+  "expect": {
+    "min_tier": 2,
+    "message_flagged": true
+  }
+}

@@ -1,0 +1,32 @@
+# Build
+.gradle/
+build/
+*.class
+*.apk
+*.aab
+.kotlin/
+
+# IDE
+.idea/
+*.iml
+.DS_Store
+
+# Secrets & local config: NEVER commit
+local.properties
+.env
+.env.*
+*.keystore
+*.jks
+google-services.json
+secrets.properties
+
+# Captured audio / call data must never reach git
+*.wav
+*.mp3
+*.m4a
+*.pcm
+captures/
+
+# Python companion
+__pycache__/
+.venv/

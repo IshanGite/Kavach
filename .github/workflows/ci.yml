@@ -1,0 +1,81 @@
+name: CI
+
+on:
+  push:
+    branches: [main, "feat/**", "fix/**"]
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  core:
+    name: Core tests, evals and security gates
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+      - uses: gradle/actions/setup-gradle@v4
+
+      - name: Unit tests + scenario evals + security gates
+        run: ./gradlew :core:test --console=plain
+
+      - name: Scorecard
+        if: always()
+        run: |
+          if [ -f core/build/reports/kavach-eval/scorecard.md ]; then
+            cat core/build/reports/kavach-eval/scorecard.md >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+      - name: Upload reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: kavach-core-reports
+          path: |
+            core/build/reports/kavach-eval/
+            core/build/reports/tests/
+          retention-days: 14
+
+  android:
+    name: Android build and lint
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    if: ${{ hashFiles('app/build.gradle.kts') != '' }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+      - uses: gradle/actions/setup-gradle@v4
+      - name: Assemble debug, lint, app unit tests
+        run: ./gradlew :app:assembleDebug :app:lintDebug :app:testDebugUnitTest --console=plain
+      - name: Upload lint report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: kavach-android-lint
+          path: app/build/reports/
+          retention-days: 14
+
+  secret-scan:
+    name: Secret scan (full history)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: gitleaks
+        run: |
+          curl -sSfL https://github.com/gitleaks/gitleaks/releases/download/v8.21.2/gitleaks_8.21.2_linux_x64.tar.gz | tar -xz gitleaks
+          ./gitleaks detect --source . --redact --no-banner --verbose

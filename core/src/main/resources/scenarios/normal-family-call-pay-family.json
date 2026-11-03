@@ -1,0 +1,37 @@
+{
+  "id": "normal-family-call-pay-family",
+  "kind": "normal",
+  "description": "Live call WITH the saved son Rahul; pay Rahul's UPI during the call. Known caller, known payee: invisible.",
+  "events": [
+    {
+      "t": 0,
+      "type": "call_started",
+      "number": "+91 98200 11122",
+      "in_contacts": true,
+      "name": "Rahul"
+    },
+    {
+      "t": 5,
+      "type": "transcript",
+      "text": "Haan beta, abhi bhej deta hoon, ruk.",
+      "speaker": "caller"
+    },
+    {
+      "t": 30,
+      "type": "payment",
+      "app": "PhonePe",
+      "stage": "opened"
+    },
+    {
+      "t": 36,
+      "type": "payment",
+      "app": "PhonePe",
+      "stage": "amount_entered",
+      "amount": 1500,
+      "payee": "rahul.son@okhdfcbank"
+    }
+  ],
+  "expect": {
+    "max_tier": 0
+  }
+}

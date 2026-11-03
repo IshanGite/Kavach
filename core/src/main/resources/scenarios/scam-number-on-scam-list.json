@@ -1,0 +1,37 @@
+{
+  "id": "scam-number-on-scam-list",
+  "kind": "scam",
+  "description": "Caller number is on the local scam list (+40). Even a quiet call becomes a pause once a payment starts.",
+  "events": [
+    {
+      "t": 0,
+      "type": "call_started",
+      "number": "+91 90000 00001",
+      "in_contacts": false
+    },
+    {
+      "t": 5,
+      "type": "transcript",
+      "text": "Sir please verify your account details with me now.",
+      "speaker": "caller"
+    },
+    {
+      "t": 40,
+      "type": "payment",
+      "app": "PhonePe",
+      "stage": "opened"
+    },
+    {
+      "t": 50,
+      "type": "payment",
+      "app": "PhonePe",
+      "stage": "amount_entered",
+      "amount": 15000,
+      "payee": "Ajay Enterprises"
+    }
+  ],
+  "expect": {
+    "min_tier": 2,
+    "min_tier_at_payment": 2
+  }
+}

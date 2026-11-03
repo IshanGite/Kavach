@@ -1,0 +1,58 @@
+{
+  "id": "scam-voice-clone-son-accident",
+  "kind": "scam",
+  "description": "Cloned voice of the user's son from a NEW number: accident, police custody, send money, don't tell mummy.",
+  "events": [
+    {
+      "t": 0,
+      "type": "call_started",
+      "number": "+91 90123 45678",
+      "in_contacts": false
+    },
+    {
+      "t": 3,
+      "type": "transcript",
+      "text": "Papa, main bol raha hoon Rahul. Mera accident ho gaya hai aur police ne pakad liya hai.",
+      "speaker": "caller"
+    },
+    {
+      "t": 15,
+      "type": "transcript",
+      "text": "Abhi paise bhejo papa, bail ke liye, mummy ko mat batana. Please jaldi.",
+      "speaker": "caller"
+    },
+    {
+      "t": 24,
+      "type": "spoof",
+      "score": 0.82
+    },
+    {
+      "t": 29,
+      "type": "spoof",
+      "score": 0.78
+    },
+    {
+      "t": 34,
+      "type": "spoof",
+      "score": 0.85
+    },
+    {
+      "t": 45,
+      "type": "payment",
+      "app": "PhonePe",
+      "stage": "opened"
+    },
+    {
+      "t": 52,
+      "type": "payment",
+      "app": "PhonePe",
+      "stage": "amount_entered",
+      "amount": 80000,
+      "payee": "Suresh Auto Garage"
+    }
+  ],
+  "expect": {
+    "min_tier": 2,
+    "min_tier_at_payment": 2
+  }
+}

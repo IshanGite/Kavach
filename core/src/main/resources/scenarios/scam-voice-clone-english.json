@@ -1,0 +1,43 @@
+{
+  "id": "scam-voice-clone-english",
+  "kind": "scam",
+  "description": "Cloned daughter's voice in English: hospital emergency, secrecy, urgency.",
+  "events": [
+    {
+      "t": 0,
+      "type": "call_started",
+      "number": "+91 90123 45600",
+      "in_contacts": false
+    },
+    {
+      "t": 3,
+      "type": "transcript",
+      "text": "Dad it's me. I'm in the hospital, there was an accident. I need money for the operation right now.",
+      "speaker": "caller"
+    },
+    {
+      "t": 20,
+      "type": "transcript",
+      "text": "Please don't tell mom, just send money urgently. I will explain later.",
+      "speaker": "caller"
+    },
+    {
+      "t": 40,
+      "type": "payment",
+      "app": "Google Pay",
+      "stage": "opened"
+    },
+    {
+      "t": 48,
+      "type": "payment",
+      "app": "Google Pay",
+      "stage": "amount_entered",
+      "amount": 65000,
+      "payee": "City Care Billing"
+    }
+  ],
+  "expect": {
+    "min_tier": 2,
+    "min_tier_at_payment": 2
+  }
+}

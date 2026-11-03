@@ -1,0 +1,31 @@
+{
+  "id": "scam-remote-access-tripwire",
+  "kind": "scam",
+  "description": "No call at all: a screen-share app is running and a banking app opens. The tripwire pauses it anyway.",
+  "events": [
+    {
+      "t": 0,
+      "type": "remote_access",
+      "app": "TeamViewer QuickSupport"
+    },
+    {
+      "t": 30,
+      "type": "payment",
+      "app": "HDFC Bank",
+      "stage": "opened"
+    },
+    {
+      "t": 40,
+      "type": "payment",
+      "app": "HDFC Bank",
+      "stage": "amount_entered",
+      "amount": 25000,
+      "payee": "Unknown Beneficiary"
+    }
+  ],
+  "expect": {
+    "min_tier": 3,
+    "min_tier_at_payment": 3,
+    "guardian_sms": true
+  }
+}

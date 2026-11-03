@@ -1,0 +1,32 @@
+{
+  "id": "normal-pay-shopkeeper",
+  "kind": "normal",
+  "description": "Pay the saved kirana store Rs 200. Nothing may appear.",
+  "events": [
+    {
+      "t": 0,
+      "type": "payment",
+      "app": "PhonePe",
+      "stage": "opened"
+    },
+    {
+      "t": 6,
+      "type": "payment",
+      "app": "PhonePe",
+      "stage": "amount_entered",
+      "amount": 200,
+      "payee": "ramesh.kirana@ybl"
+    },
+    {
+      "t": 12,
+      "type": "payment",
+      "app": "PhonePe",
+      "stage": "pin_screen",
+      "amount": 200,
+      "payee": "ramesh.kirana@ybl"
+    }
+  ],
+  "expect": {
+    "max_tier": 0
+  }
+}

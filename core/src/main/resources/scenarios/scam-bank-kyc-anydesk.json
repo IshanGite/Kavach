@@ -1,0 +1,49 @@
+{
+  "id": "scam-bank-kyc-anydesk",
+  "kind": "scam",
+  "description": "Fake bank KYC call asks to install AnyDesk. Remote access + banking app = hard override tier 3.",
+  "events": [
+    {
+      "t": 0,
+      "type": "call_started",
+      "number": "+91 99887 76655",
+      "in_contacts": false
+    },
+    {
+      "t": 5,
+      "type": "transcript",
+      "text": "Sir main SBI bank se bol raha hoon. Aapka KYC update nahi hua, aapka account blocked ho jayega abhi.",
+      "speaker": "caller"
+    },
+    {
+      "t": 25,
+      "type": "transcript",
+      "text": "Aapko ek app download karna hai, AnyDesk. Install the app and tell me the code. Apna OTP bhi batao.",
+      "speaker": "caller"
+    },
+    {
+      "t": 45,
+      "type": "remote_access",
+      "app": "AnyDesk"
+    },
+    {
+      "t": 70,
+      "type": "payment",
+      "app": "YONO SBI",
+      "stage": "opened"
+    },
+    {
+      "t": 80,
+      "type": "payment",
+      "app": "YONO SBI",
+      "stage": "amount_entered",
+      "amount": 45000,
+      "payee": "kyc.verify@sbi"
+    }
+  ],
+  "expect": {
+    "min_tier": 3,
+    "min_tier_at_payment": 3,
+    "guardian_sms": true
+  }
+}

@@ -1,0 +1,25 @@
+{
+  "id": "normal-3am-pay-saved",
+  "kind": "normal",
+  "description": "3 am: pay the saved milk dairy. Odd hour alone is nothing.",
+  "start_local": "2026-11-04T03:00:00",
+  "events": [
+    {
+      "t": 0,
+      "type": "payment",
+      "app": "PhonePe",
+      "stage": "opened"
+    },
+    {
+      "t": 6,
+      "type": "payment",
+      "app": "PhonePe",
+      "stage": "amount_entered",
+      "amount": 60,
+      "payee": "milk.dairy@upi"
+    }
+  ],
+  "expect": {
+    "max_tier": 0
+  }
+}

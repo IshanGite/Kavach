@@ -1,0 +1,57 @@
+{
+  "id": "scam-digital-arrest-english-demo",
+  "kind": "scam",
+  "description": "The 4-minute demo script verbatim (English). Payee is typed in the payment app after being spoken.",
+  "events": [
+    {
+      "t": 0,
+      "type": "call_started",
+      "number": "+91 99887 76655",
+      "in_contacts": false
+    },
+    {
+      "t": 4,
+      "type": "transcript",
+      "text": "I am Inspector Sharma from Mumbai Cyber Crime. A parcel in your name has drugs.",
+      "speaker": "caller"
+    },
+    {
+      "t": 20,
+      "type": "transcript",
+      "text": "You will be arrested. Stay on the call, don't tell anyone.",
+      "speaker": "caller"
+    },
+    {
+      "t": 40,
+      "type": "transcript",
+      "text": "Transfer rupees 50000 to this verification account, upi id sharma dot verify at okicici.",
+      "speaker": "caller"
+    },
+    {
+      "t": 60,
+      "type": "payment",
+      "app": "PhonePe",
+      "stage": "opened"
+    },
+    {
+      "t": 70,
+      "type": "payment",
+      "app": "PhonePe",
+      "stage": "amount_entered",
+      "amount": 50000,
+      "payee": "sharma.verify@okicici"
+    },
+    {
+      "t": 78,
+      "type": "payment",
+      "app": "PhonePe",
+      "stage": "pin_screen"
+    }
+  ],
+  "expect": {
+    "min_tier": 3,
+    "min_tier_at_payment": 3,
+    "pause_before_pin": true,
+    "guardian_sms": true
+  }
+}

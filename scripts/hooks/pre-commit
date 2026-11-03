@@ -1,0 +1,20 @@
+#!/usr/bin/env bash
+# Kavach pre-commit: fast core tests (unit + evals + security gates). ~5-10 s warm.
+# Install once:  ./scripts/install-hooks.sh      Bypass in an emergency:  git commit --no-verify
+set -euo pipefail
+cd "$(git rev-parse --show-toplevel)"
+
+# Never let audio / keystores / env files into a commit, even if .gitignore was edited.
+if git diff --cached --name-only --diff-filter=ACM | grep -E '\.(wav|mp3|m4a|pcm|keystore|jks)$|(^|/)\.env|local\.properties|google-services\.json'; then
+  echo "pre-commit: refusing to commit audio/keystore/secret files listed above." >&2
+  exit 1
+fi
+
+# Pick a JDK 17 if the default one is too new for the pinned Gradle.
+if [ -z "${JAVA_HOME:-}" ] && [ -x /usr/libexec/java_home ]; then
+  JAVA_HOME="$(/usr/libexec/java_home -v 17 2>/dev/null || true)"; export JAVA_HOME
+fi
+
+echo "pre-commit: running :core:test (unit + evals + security gates)..."
+./gradlew :core:test --console=plain -q
+echo "pre-commit: OK"

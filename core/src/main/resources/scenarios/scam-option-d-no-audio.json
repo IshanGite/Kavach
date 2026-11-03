@@ -1,0 +1,32 @@
+{
+  "id": "scam-option-d-no-audio",
+  "kind": "scam",
+  "description": "Audio capture is silent on this phone (Android restricts mic during calls). Option D: metadata + screen context alone must still pause.",
+  "analyst": "none",
+  "events": [
+    {
+      "t": 0,
+      "type": "call_started",
+      "number": "+91 99887 76655",
+      "in_contacts": false
+    },
+    {
+      "t": 60,
+      "type": "payment",
+      "app": "PhonePe",
+      "stage": "opened"
+    },
+    {
+      "t": 70,
+      "type": "payment",
+      "app": "PhonePe",
+      "stage": "amount_entered",
+      "amount": 50000,
+      "payee": "verification.acct@oksbi"
+    }
+  ],
+  "expect": {
+    "min_tier": 2,
+    "min_tier_at_payment": 2
+  }
+}

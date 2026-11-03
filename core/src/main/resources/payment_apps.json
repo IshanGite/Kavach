@@ -1,0 +1,27 @@
+{
+  "_comment": "Package names and screen hints live in config so new apps can be added without code changes. Verify on the demo phone with: adb shell dumpsys window | grep mCurrentFocus",
+  "payment_apps": [
+    { "package": "com.google.android.apps.nbu.paisa.user", "name": "Google Pay" },
+    { "package": "com.phonepe.app", "name": "PhonePe" },
+    { "package": "net.one97.paytm", "name": "Paytm" },
+    { "package": "in.org.npci.upiapp", "name": "BHIM" },
+    { "package": "com.dreamplug.androidapp", "name": "CRED" },
+    { "package": "com.amazon.mShop.android.shopping", "name": "Amazon Pay" },
+    { "package": "com.csam.icici.bank.imobile", "name": "ICICI iMobile" },
+    { "package": "com.snapwork.hdfc", "name": "HDFC Bank" },
+    { "package": "com.sbi.upi", "name": "SBI Pay" },
+    { "package": "com.sbi.SBIFreedomPlus", "name": "YONO SBI" }
+  ],
+  "remote_access_apps": [
+    { "package": "com.anydesk.anydeskandroid", "name": "AnyDesk" },
+    { "package": "com.teamviewer.quicksupport.market", "name": "TeamViewer QuickSupport" },
+    { "package": "com.teamviewer.host.market", "name": "TeamViewer Host" },
+    { "package": "com.rustdesk.rustdesk", "name": "RustDesk" }
+  ],
+  "voip_call_apps": [
+    { "package": "com.whatsapp", "name": "WhatsApp" },
+    { "package": "com.skype.raider", "name": "Skype" },
+    { "package": "org.telegram.messenger", "name": "Telegram" }
+  ],
+  "pin_screen_hints": ["enter upi pin", "enter your upi pin", "upi pin", "यूपीआई पिन"]
+}

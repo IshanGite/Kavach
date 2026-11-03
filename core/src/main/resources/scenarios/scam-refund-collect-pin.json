@@ -1,0 +1,52 @@
+{
+  "id": "scam-refund-collect-pin",
+  "kind": "scam",
+  "description": "'Enter your PIN to receive your refund': a UPI collect request arrives mid-call and the PIN screen opens.",
+  "events": [
+    {
+      "t": 0,
+      "type": "call_started",
+      "number": "+91 70123 45671",
+      "in_contacts": false
+    },
+    {
+      "t": 4,
+      "type": "transcript",
+      "text": "Sir aapka refund aaya hai. Refund ke liye aapko apna UPI PIN enter karna hoga, enter your pin to receive money.",
+      "speaker": "caller"
+    },
+    {
+      "t": 20,
+      "type": "transcript",
+      "text": "Abhi jaldi karo, offer expire ho jayega. OTP bhi share karo.",
+      "speaker": "caller"
+    },
+    {
+      "t": 35,
+      "type": "collect",
+      "amount": 9500,
+      "payee": "refund.desk@ybl"
+    },
+    {
+      "t": 40,
+      "type": "payment",
+      "app": "PhonePe",
+      "stage": "opened",
+      "amount": 9500,
+      "payee": "refund.desk@ybl"
+    },
+    {
+      "t": 48,
+      "type": "payment",
+      "app": "PhonePe",
+      "stage": "pin_screen",
+      "amount": 9500,
+      "payee": "refund.desk@ybl"
+    }
+  ],
+  "expect": {
+    "min_tier": 2,
+    "min_tier_at_payment": 2,
+    "pause_before_pin": true
+  }
+}

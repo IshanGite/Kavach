@@ -1,0 +1,64 @@
+{
+  "id": "scam-digital-arrest-whatsapp-video",
+  "kind": "scam",
+  "description": "WhatsApp video 'digital arrest' lasting 45 minutes; victim finally pays. VoIP + long call stack.",
+  "events": [
+    {
+      "t": 0,
+      "type": "call_started",
+      "number": "+91 99887 76655",
+      "in_contacts": false,
+      "channel": "voip"
+    },
+    {
+      "t": 10,
+      "type": "transcript",
+      "text": "This is CBI headquarters. Your Aadhaar is linked to a money laundering case. You are under digital arrest.",
+      "speaker": "caller"
+    },
+    {
+      "t": 300,
+      "type": "transcript",
+      "text": "Do not disconnect this video call. Do not tell your family. You must cooperate immediately.",
+      "speaker": "caller"
+    },
+    {
+      "t": 1200,
+      "type": "transcript",
+      "text": "To prove your innocence, transfer the amount to the RBI safe account. Keep the video on.",
+      "speaker": "caller"
+    },
+    {
+      "t": 2700,
+      "type": "transcript",
+      "text": "Send it now, rupees 200000, upi id rbi dot safe at ybl",
+      "speaker": "caller"
+    },
+    {
+      "t": 2720,
+      "type": "payment",
+      "app": "PhonePe",
+      "stage": "opened"
+    },
+    {
+      "t": 2735,
+      "type": "payment",
+      "app": "PhonePe",
+      "stage": "amount_entered",
+      "amount": 200000,
+      "payee": "rbi.safe@ybl"
+    },
+    {
+      "t": 2750,
+      "type": "payment",
+      "app": "PhonePe",
+      "stage": "pin_screen"
+    }
+  ],
+  "expect": {
+    "min_tier": 3,
+    "min_tier_at_payment": 3,
+    "pause_before_pin": true,
+    "guardian_sms": true
+  }
+}
