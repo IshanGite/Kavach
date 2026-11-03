@@ -1,0 +1,53 @@
+{
+  "id": "normal-noisy-asr-shop-rupees",
+  "kind": "normal",
+  "description": "Shop call with noisy ASR: rupees, card, abhi, transfer, but nothing threatening.",
+  "events": [
+    {
+      "t": 0,
+      "type": "call_started",
+      "number": "+91 98111 22334",
+      "in_contacts": false
+    },
+    {
+      "t": 5,
+      "type": "transcript",
+      "text": "50.000 rupees ka saman hai",
+      "speaker": "caller"
+    },
+    {
+      "t": 25,
+      "type": "transcript",
+      "text": "aapka card machine abhi kaam nahi kar raha, transfer kar dijiye gpay se",
+      "speaker": "caller"
+    },
+    {
+      "t": 45,
+      "type": "transcript",
+      "text": "kodichital rasid abhi bhej raha hu",
+      "speaker": "caller"
+    },
+    {
+      "t": 65,
+      "type": "call_ended",
+      "duration": 65
+    },
+    {
+      "t": 95,
+      "type": "payment",
+      "app": "PhonePe",
+      "stage": "opened"
+    },
+    {
+      "t": 103,
+      "type": "payment",
+      "app": "PhonePe",
+      "stage": "amount_entered",
+      "amount": 2300,
+      "payee": "Sharma General Store"
+    }
+  ],
+  "expect": {
+    "max_tier": 1
+  }
+}

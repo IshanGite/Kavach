@@ -156,6 +156,21 @@ object KeywordAnalyst {
     private val REFUND = lex("refund", "cashback", "claim your", "collect request", "रिफंड", "कैशबैक")
     private val INVEST = lex("telegram", "guaranteed return", "guaranteed profit", "double your money", "trading profit", "part time job", "task", "returns")
 
+    /** A bare 4+ digit figure such as "50.000" or "50,000": ASR keeps numbers even when it mangles the words. */
+    private val AMOUNT = Regex("""(?<![\d])\d{1,3}(?:[.,]\d{3})+(?![\d])|₹\s*\d+|rs\.?\s*\d+""", RegexOption.IGNORE_CASE)
+
+    /** Merge exact and fuzzy hits, treating romanisation variants of one word as a single hit. */
+    private fun merge(exact: List<String>, fuzzy: List<String>): List<String> {
+        val seen = HashSet<String>()
+        return (exact + fuzzy).filter { seen.add(AsrFuzzy.canon(it).ifEmpty { it }) }
+    }
+
+    /**
+     * Threat + money + urgency/card each seen only as noisy fragments is weaker per item than a clean phrase, but their
+     * co-occurrence inside one window is the signature itself. Lifts the score to pause territory once a payment follows.
+     */
+    private const val CONVERGENCE_BONUS = 15
+
     private fun hits(rx: Regex, text: String): List<String> = rx.findAll(text).map { it.value }.distinct().toList()
 
     private fun score(h: List<String>): Double = if (h.isEmpty()) 0.0 else minOf(1.0, 0.65 + 0.2 * (h.size - 1))
@@ -163,14 +178,32 @@ object KeywordAnalyst {
     /** Pure function of text, so it is trivially testable and cannot be talked out of its answer. */
     fun analyze(transcript: String): TacticsFindings {
         val text = transcript // matched on the original string so quotes are exact substrings of what was heard
-        val authority = hits(AUTHORITY, text)
-        val threat = hits(THREAT, text)
-        val urgency = hits(URGENCY, text)
+        val fuzzy = AsrFuzzy.scan(text)
+        val deva = AsrFuzzy.deva(text)
+        fun fz(c: AsrFuzzy.Cat) = (fuzzy[c].orEmpty() + deva[c].orEmpty())
+        val authority = merge(hits(AUTHORITY, text), fz(AsrFuzzy.Cat.AUTHORITY))
+        val threat = merge(hits(THREAT, text), fz(AsrFuzzy.Cat.THREAT))
+        val urgency = merge(hits(URGENCY, text), fz(AsrFuzzy.Cat.URGENCY))
         val secrecy = hits(SECRECY, text)
-        val payment = hits(PAYMENT, text)
         // "Never share your OTP" is a warning, not a request: strip negated phrases before looking for OTP/PIN asks.
-        val remote = hits(REMOTE_OTP, withoutWarnings(text))
+        val advice = withoutWarnings(text)
+        var payment = hits(PAYMENT, text)
+        var inferred = false
+        val remote = hits(REMOTE_OTP, advice)
         val emotional = hits(EMOTIONAL, text)
+        // Noisy ASR rarely yields a whole phrase, but across the rolling window the fragments add up: a threat word,
+        // a money word (or a transfer verb) and either urgency or a card/OTP/KYC mention is an inferred payment ask.
+        // Never from a warning sentence, and never without a threat word, so ordinary money talk stays silent.
+        if (payment.isEmpty() && threat.isNotEmpty()) {
+            val adv = AsrFuzzy.scan(advice)
+            val advDeva = AsrFuzzy.deva(advice)
+            fun has(c: AsrFuzzy.Cat) = adv[c].orEmpty().isNotEmpty() || advDeva[c].orEmpty().isNotEmpty()
+            val moneyish = has(AsrFuzzy.Cat.MONEY) || has(AsrFuzzy.Cat.PAYMENT) || AMOUNT.containsMatchIn(advice)
+            if (moneyish && (has(AsrFuzzy.Cat.URGENCY) || has(AsrFuzzy.Cat.INSTRUMENT))) {
+                inferred = true
+                payment = (adv[AsrFuzzy.Cat.MONEY].orEmpty() + adv[AsrFuzzy.Cat.PAYMENT].orEmpty()).take(1).ifEmpty { listOf("amount") }
+            }
+        }
 
         val tactics = Tactics(
             authorityImpersonation = score(authority),
@@ -214,7 +247,7 @@ object KeywordAnalyst {
             claimedIdentity = claimed,
             tactics = tactics,
             scamType = scamType,
-            llmRisk = riskOf(tactics),
+            llmRisk = (riskOf(tactics) + if (inferred) CONVERGENCE_BONUS else 0).coerceAtMost(100),
             evidenceQuotes = quotes,
             payeeDetailsMentioned = payees,
             source = SOURCE,

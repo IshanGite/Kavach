@@ -59,5 +59,13 @@
   "scam-marathi-digital-arrest-marathlish",
   "scam-marathi-kyc-otp-mixed",
   "normal-marathi-family-school-fee",
-  "normal-marathi-shopkeeper-call"
+  "normal-marathi-shopkeeper-call",
+  "scam-noisy-asr-hinglish-digital-arrest",
+  "scam-noisy-asr-credit-card-kyc",
+  "scam-noisy-asr-english-with-hindi",
+  "normal-noisy-asr-family-call",
+  "normal-noisy-asr-shop-rupees",
+  "normal-noisy-asr-delivery",
+  "normal-noisy-asr-bank-awareness",
+  "normal-noisy-asr-gibberish-alone"
 ]

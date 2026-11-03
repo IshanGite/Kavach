@@ -1,0 +1,39 @@
+{
+  "id": "normal-noisy-asr-bank-awareness",
+  "kind": "normal",
+  "description": "Genuine bank awareness call garbled by ASR: warns about arrest-style fraud and OTP, mentions card and rupees. A warning, not a threat.",
+  "events": [
+    {
+      "t": 0,
+      "type": "call_started",
+      "number": "+91 98111 22334",
+      "in_contacts": false
+    },
+    {
+      "t": 5,
+      "type": "transcript",
+      "text": "Hello sir this is a courtesy call, beware of fraudsters who say you will be arrested",
+      "speaker": "caller"
+    },
+    {
+      "t": 25,
+      "type": "transcript",
+      "text": "never share your OTP or credit card details, abhi bhi koi paise maange to mana kar dijiye",
+      "speaker": "caller"
+    },
+    {
+      "t": 45,
+      "type": "transcript",
+      "text": "Girdert car fraud awareness, 50.000 rupees lost by customers last year",
+      "speaker": "caller"
+    },
+    {
+      "t": 65,
+      "type": "call_ended",
+      "duration": 65
+    }
+  ],
+  "expect": {
+    "max_tier": 1
+  }
+}

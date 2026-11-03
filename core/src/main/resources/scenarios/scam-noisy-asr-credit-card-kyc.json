@@ -1,0 +1,62 @@
+{
+  "id": "scam-noisy-asr-credit-card-kyc",
+  "kind": "scam",
+  "description": "Noisy ASR of a credit card / KYC arrest threat: card, fraud, girphtar, abhi, OTP, rupees. No clean phrase anywhere.",
+  "events": [
+    {
+      "t": 0,
+      "type": "call_started",
+      "number": "+91 98111 22334",
+      "in_contacts": false
+    },
+    {
+      "t": 5,
+      "type": "transcript",
+      "text": "...your credit card.",
+      "speaker": "caller"
+    },
+    {
+      "t": 25,
+      "type": "transcript",
+      "text": "Girdert car fraud",
+      "speaker": "caller"
+    },
+    {
+      "t": 45,
+      "type": "transcript",
+      "text": "award cutney gila abhi aapko ak vain aaddp a kane par aadd",
+      "speaker": "caller"
+    },
+    {
+      "t": 65,
+      "type": "transcript",
+      "text": "aapka kyc expired hai warna girphtar ho jaoge, otp bhejo abhi, 50.000 rupees",
+      "speaker": "caller"
+    },
+    {
+      "t": 85,
+      "type": "payment",
+      "app": "PhonePe",
+      "stage": "opened"
+    },
+    {
+      "t": 93,
+      "type": "payment",
+      "app": "PhonePe",
+      "stage": "amount_entered",
+      "amount": 50000,
+      "payee": "kyc.update@okaxis"
+    },
+    {
+      "t": 100,
+      "type": "payment",
+      "app": "PhonePe",
+      "stage": "pin_screen"
+    }
+  ],
+  "expect": {
+    "min_tier": 2,
+    "min_tier_at_payment": 2,
+    "pause_before_pin": true
+  }
+}

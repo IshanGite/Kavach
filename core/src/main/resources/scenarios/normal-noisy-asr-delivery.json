@@ -1,0 +1,53 @@
+{
+  "id": "normal-noisy-asr-delivery",
+  "kind": "normal",
+  "description": "Delivery agent with garbled ASR and a COD amount. No threat word.",
+  "events": [
+    {
+      "t": 0,
+      "type": "call_started",
+      "number": "+91 98111 22334",
+      "in_contacts": false
+    },
+    {
+      "t": 5,
+      "type": "transcript",
+      "text": "award cutney gila parcel abhi pahunch gaya",
+      "speaker": "caller"
+    },
+    {
+      "t": 25,
+      "type": "transcript",
+      "text": "your credit card ... order 1200 rupees cash on delivery",
+      "speaker": "caller"
+    },
+    {
+      "t": 45,
+      "type": "transcript",
+      "text": "angi may si miyao gate par",
+      "speaker": "caller"
+    },
+    {
+      "t": 65,
+      "type": "call_ended",
+      "duration": 65
+    },
+    {
+      "t": 95,
+      "type": "payment",
+      "app": "PhonePe",
+      "stage": "opened"
+    },
+    {
+      "t": 103,
+      "type": "payment",
+      "app": "PhonePe",
+      "stage": "amount_entered",
+      "amount": 1200,
+      "payee": "Amazon Delivery Partner"
+    }
+  ],
+  "expect": {
+    "max_tier": 1
+  }
+}

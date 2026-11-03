@@ -1,0 +1,27 @@
+{
+  "id": "normal-noisy-asr-gibberish-alone",
+  "kind": "normal",
+  "description": "Pure ASR gibberish, no payment. Must show nothing.",
+  "events": [
+    {
+      "t": 0,
+      "type": "call_started",
+      "number": "+91 98111 22334",
+      "in_contacts": false
+    },
+    {
+      "t": 5,
+      "type": "transcript",
+      "text": "you already have Om Soma and there it bang.com",
+      "speaker": "caller"
+    },
+    {
+      "t": 25,
+      "type": "call_ended",
+      "duration": 25
+    }
+  ],
+  "expect": {
+    "max_tier": 1
+  }
+}

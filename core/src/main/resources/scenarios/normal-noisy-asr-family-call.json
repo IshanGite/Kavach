@@ -1,0 +1,53 @@
+{
+  "id": "normal-noisy-asr-family-call",
+  "kind": "normal",
+  "description": "Family call with garbled ASR. Mentions paise and abhi but no threat; pays a first-time small amount.",
+  "events": [
+    {
+      "t": 0,
+      "type": "call_started",
+      "number": "+91 98111 22334",
+      "in_contacts": false
+    },
+    {
+      "t": 5,
+      "type": "transcript",
+      "text": "Om suma bol rahu & upka",
+      "speaker": "caller"
+    },
+    {
+      "t": 25,
+      "type": "transcript",
+      "text": "mummy abhi ghar aa rahi hai, paise rupaye bhej dungi, aad kane par",
+      "speaker": "caller"
+    },
+    {
+      "t": 45,
+      "type": "transcript",
+      "text": "tum khana kha lo abhi",
+      "speaker": "caller"
+    },
+    {
+      "t": 65,
+      "type": "call_ended",
+      "duration": 65
+    },
+    {
+      "t": 95,
+      "type": "payment",
+      "app": "PhonePe",
+      "stage": "opened"
+    },
+    {
+      "t": 103,
+      "type": "payment",
+      "app": "PhonePe",
+      "stage": "amount_entered",
+      "amount": 500,
+      "payee": "Ramesh Kumar"
+    }
+  ],
+  "expect": {
+    "max_tier": 1
+  }
+}
