@@ -30,19 +30,20 @@ fun PreflightScreen() {
     val c = ctx.container()
     val scope = rememberCoroutineScope()
     val s by c.settings.state.collectAsState()
+    val asr by c.asrState.collectAsState()
     val tick = rememberResumeTick()
     var llm by remember { mutableStateOf<Line?>(null) }
 
     val hasGuardian = s.guardians.any { it.number.filter(Char::isDigit).length >= 10 }
     val hasFamily = s.family.any { it.number.filter(Char::isDigit).length >= 10 }
-    val lines = remember(tick, s) {
+    val lines = remember(tick, s, asr.name) {
         buildList {
             Health.checks(ctx).forEach { add(Line(it.ok, it.label, it.why)) }
             add(Line(s.protectionEnabled, "Protection is ON", "Home > switch"))
             add(Line(hasGuardian, "A guardian number is set", "Settings > Guardians, a real phone you can hold up"))
             add(Line(hasFamily, "A family contact is set for the big call button", "Settings > Family"))
             add(Line(c.baseline.historySize() >= 5, "Payment history is seeded (${c.baseline.historySize()} payments)", "Settings > Seed demo payment history"))
-            add(Line(true.takeIf { s.audioSource.isNotBlank() }, "Audio source: ${s.audioSource}, ASR: ${c.asr.name}", "Day-0 test decides this"))
+            add(Line(true.takeIf { s.audioSource.isNotBlank() }, "Audio source: ${s.audioSource}, ASR: ${asr.name}", "Day-0 test decides this"))
             add(Line(if (s.companionEnabled) s.companionToken.length >= 8 else null, "Companion listener ${if (s.companionEnabled) "enabled" else "off"}", "Needs a token of 8+ characters"))
             add(Line(!s.cloudEnabled, "Cloud fallback is ${if (s.cloudEnabled) "ON (text only)" else "OFF (fully on-device)"}", "Settings > Language model"))
         }

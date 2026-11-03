@@ -11,6 +11,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.kavach.core.intervention.InterventionPlan
@@ -56,8 +57,9 @@ fun NudgeBanner(plan: InterventionPlan, onCall: () -> Unit, onDismiss: () -> Uni
 }
 
 /**
- * Tier 2/3: full-screen pause. Specific reasons, a cooling-off timer, the three questions, a big "call your family" button.
- * The user can ALWAYS proceed once the timer ends: Kavach never blocks a legitimate payment, it only breaks the scammer's grip.
+ * Tier 2/3: full-screen pause. Specific reasons, a cooling-off timer, the three questions, a big "call your family"
+ * button and, beside it, a one-tap cybercrime helpline (1930) button. The user can ALWAYS proceed once the timer ends:
+ * Kavach never blocks a legitimate payment, it only breaks the scammer's grip.
  */
 @Composable
 fun PauseScreen(
@@ -65,6 +67,7 @@ fun PauseScreen(
     pauseUntilMs: StateFlow<Long?>,
     now: () -> Long,
     onCall: () -> Unit,
+    onCallHelpline: () -> Unit,
     onAnswered: (yesCount: Int) -> Unit,
     onProceed: () -> Unit,
 ) {
@@ -97,11 +100,48 @@ fun PauseScreen(
             }
             plan.mythBuster?.let { Text(it, color = Color.White, fontSize = 18.sp, fontWeight = FontWeight.SemiBold) }
 
-            if (plan.callTrusted != null) {
-                Button(
-                    onClick = onCall, modifier = Modifier.fillMaxWidth().heightIn(min = 72.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = Safe, contentColor = Color.White), shape = RoundedCornerShape(16.dp),
-                ) { Text(plan.callTrustedLabel.orEmpty(), fontSize = 24.sp, fontWeight = FontWeight.ExtraBold) }
+            if (plan.callTrusted != null || plan.callHelpline != null) {
+                val sideBySide = plan.callTrusted != null && plan.callHelpline != null
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(10.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    if (plan.callTrusted != null) {
+                        Button(
+                            onClick = onCall,
+                            modifier = Modifier.weight(1f).heightIn(min = if (sideBySide) 96.dp else 72.dp),
+                            colors = ButtonDefaults.buttonColors(containerColor = Safe, contentColor = Color.White),
+                            shape = RoundedCornerShape(16.dp),
+                            contentPadding = PaddingValues(horizontal = if (sideBySide) 10.dp else 24.dp, vertical = 12.dp),
+                        ) {
+                            Text(
+                                plan.callTrustedLabel.orEmpty(),
+                                fontSize = if (sideBySide) 18.sp else 24.sp,
+                                fontWeight = FontWeight.ExtraBold,
+                                textAlign = TextAlign.Center,
+                                lineHeight = if (sideBySide) 22.sp else 28.sp,
+                            )
+                        }
+                    }
+                    if (plan.callHelpline != null) {
+                        Button(
+                            onClick = onCallHelpline,
+                            modifier = Modifier.weight(if (sideBySide) 1.35f else 1f).heightIn(min = if (sideBySide) 96.dp else 72.dp),
+                            colors = ButtonDefaults.buttonColors(containerColor = Color.White, contentColor = Navy),
+                            shape = RoundedCornerShape(16.dp),
+                            contentPadding = PaddingValues(horizontal = 10.dp, vertical = 12.dp),
+                        ) {
+                            Text(
+                                plan.callHelplineLabel.orEmpty(),
+                                fontSize = if (sideBySide) 16.sp else 22.sp,
+                                fontWeight = FontWeight.ExtraBold,
+                                textAlign = TextAlign.Center,
+                                lineHeight = if (sideBySide) 20.sp else 26.sp,
+                            )
+                        }
+                    }
+                }
                 Text(t(lang, "Hang up on the caller first, then call.", "पहले कॉलर का फ़ोन काटिए, फिर कॉल कीजिए।"), color = Color.White, fontSize = 15.sp)
             }
             plan.callbackVerification?.let { Text(it, color = Color.White, fontSize = 18.sp, fontWeight = FontWeight.Bold) }

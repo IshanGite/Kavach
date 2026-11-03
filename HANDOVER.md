@@ -14,7 +14,7 @@ Phone verification steps: `docs/PHONE_TEST_PLAN.md`.
 
 | | |
 |---|---|
-| Last updated | 2026-11-03 (evening), Ishan + Claude |
+| Last updated | 2026-11-03 (night), Vosk ASR session |
 | `main` is | green: 167 core tests; offline evals 30/30 scams paused and 0/24 normal paused; **with the live gemma3:4b in the loop 27/27 and 0/23**; security gates pass; APK builds; lint clean |
 | Held-out honesty | 20 unseen scenarios run BEFORE tuning: rule layer alone caught 6/12 scams. Those 20 are now used up for tuning; **we still need a fresh held-out set from someone outside the team** |
 | Model latency (laptop, gemma3:4b, terse prompt) | median 5.4 s, p90 6.9 s. The phone will be slower; on the phone expect timeouts and rely on the keyword floor. Measure with Pre-flight |
@@ -46,7 +46,7 @@ Legend: ✅ built and tested on the laptop · 🟡 built, compiles, **untested o
 | Audio capture + Day-0 audio test | 🟡 | `audio/Audio.kt`, `ui/Screens.kt` | Test screen records 20 s per source and prints a SILENT/SIGNAL verdict |
 | Companion listener (option C): phone side + laptop script | 🟡 / ✅ | `audio/CompanionServer.kt`, `companion/listener.py` | Script tested against a mock; phone side untested |
 | Guardian SMS, TTS (EN/HI), notifications, PDF report | 🟡 | `engine/Platform.kt`, `util/Files.kt` | |
-| **Speech-to-text (whisper.cpp)** | ⬜ | `audio/Audio.kt` `AsrEngine` | Interface + `NoopAsr` only. Without it the app runs as option D. **Om's main build task** (or use the companion) |
+| **Speech-to-text (Vosk)** | 🟡 | `audio/VoskAsr.kt`, `Audio.kt` | On-device when `vosk-model-small-en-in-0.4` / `vosk-model-small-hi-0.22` are in external files. Otherwise `NoopAsr` and Home shows `ASR: none (push Vosk model)`. Not run on a device. |
 | Ollama on the phone (Termux) | ⬜ | `docs/ANDROID_SETUP.md` | Not set up. Laptop Ollama over `adb reverse` works for dev |
 | Synthetic-voice detector (ONNX) | ⬜ | | Stretch. Weight is 0 when absent; spec says weak signal |
 | Onboarding polish, safe-word capture | ⬜ | | Only a flag exists for the safe word |
@@ -54,11 +54,12 @@ Legend: ✅ built and tested on the laptop · 🟡 built, compiles, **untested o
 
 ## What is verified vs not
 
-**Verified (laptop):** all `core` behaviour, 32 scenarios, fuzzed invariants, repo security gates (secrets, audio files, cleartext HTTP, logging, manifest
-permissions/exported/backup), APK assembles, Android lint passes, companion script talks to a mock server.
+**Verified (laptop):** all `core` behaviour, 54 scenarios (scorecard 30/30 scams paused, 0/24 normal paused), fuzzed invariants, repo security gates (secrets, audio files, cleartext HTTP, logging, manifest
+permissions/exported/backup), APK assembles with Vosk + JNA native libs, Android lint passes, companion script talks to a mock server.
+Vosk model-folder resolution and result JSON parsing have JVM unit tests. Loading a model and transcribing audio have not run on a phone.
 
 **NOT verified:** that any Android API behaves as assumed on a real device: overlay drawing over a UPI app, accessibility node text of GPay/PhonePe,
-PHONE_STATE number delivery, mic during call, TTS Hindi voice, SMS sending, foreground-service survival, Android 14 microphone-FGS rules.
+PHONE_STATE number delivery, mic during call, Vosk model load and transcription, TTS Hindi voice, SMS sending, foreground-service survival, Android 14 microphone-FGS rules.
 
 ## Next actions
 
@@ -76,9 +77,9 @@ PHONE_STATE number delivery, mic during call, TTS Hindi voice, SMS sending, fore
    (`adb shell dumpsys window | grep mCurrentFocus`). Done when the amount and payee are read on the app you will demo, before the PIN screen.
 5. **Live call test** (30 min). Ishan's phone calls Om's phone (unknown number). Debug log must show CallStarted, then a payment intent when GPay opens,
    then the overlay. Check the number is captured (needs READ_CALL_LOG) and that a saved contact is NOT treated as unknown.
-6. **Speech-to-text.** Either (a) option C: `pip install -r companion/requirements.txt`, `adb forward tcp:8765 tcp:8765`, set a token in Settings and enable the companion,
-   run `python3 companion/listener.py --token <t>`; or (b) integrate whisper.cpp via JNI behind `AsrEngine` (`Container.asr`). Done when a spoken digital-arrest script produces
-   `Transcript ...` lines in the Debug log and the language score L rises.
+6. **Speech-to-text on the phone.** Push the small Vosk models (`docs/ANDROID_SETUP.md`), force-stop, reopen. Done when Home shows `ASR: vosk on-device ...`,
+   a spoken digital-arrest script produces `Transcript ...` lines in the Debug log, and L rises. If Day-0 is SILENT, use option C instead
+   (`adb forward tcp:8765 tcp:8765`, Settings token, `python3 companion/listener.py --token <t>`). Set Settings > Language to the script's language before the call.
 7. **Ollama on the phone** (45 min, optional). Termux from F-Droid, `pkg install ollama`, `ollama serve`, pull a small model, exempt Termux from battery optimisation.
    Measure latency in Debug > Ping. Expect > 8 s on a phone: then rely on the keyword analyst, or try `gemma3:1b`. Meanwhile `adb reverse tcp:11434 tcp:11434` lets the phone use the laptop's Ollama.
 8. **Guardian SMS end to end.** Put a real second number in Settings > Guardians, trigger tier 3 via Debug, confirm the SMS arrives and that replying `HOLD` extends the timer.
@@ -97,6 +98,7 @@ PHONE_STATE number delivery, mic during call, TTS Hindi voice, SMS sending, fore
 | Risk | Mitigation / where to look |
 |---|---|
 | Mic returns silence during calls (Android 10+) | Day-0 test; option C companion; option D still reaches tier 2 (`scam-option-d-no-audio`) |
+| Vosk runs one model per 5 s window (Settings language). The other model is used only when the first returns no words, so a wrong-language hallucination is not retried. Two full decodes per window were not wired: small-model confidence is too flat to choose, and it would be about 2x CPU. Windows overlap by 1 s, so the session transcript repeats words. | Match Settings language to the demo script. A later design can feed the 100 ms mic reads to a long-lived recogniser instead of re-decoding the 5 s ring. |
 | Accessibility can't read amount/payee in a UPI app (FLAG_SECURE, custom views) | "Payment app opened during call" alone is enough for a nudge/pause; pick the app that exposes views best for the demo; tune `ScreenParser` |
 | Sideloaded APK: accessibility/notification toggles greyed out (Android 13+) | App info > ⋮ > Allow restricted settings |
 | Android 14 refuses the microphone foreground type if the service starts in the background | Service is started from the UI toggle; falls back to running without the mic type (logged) |
@@ -109,7 +111,7 @@ PHONE_STATE number delivery, mic during call, TTS Hindi voice, SMS sending, fore
 
 ## Open decisions
 
-- Audio option A/B/C/D: decided by T2 on Om's phone.
+- Audio option A/B/C/D: Vosk (option A) is in the APK, but T2 on Om's phone still decides whether the mic works during a call. If it is silent, use option C.
 - Cloud fallback on or off for the demo? Default is off. Judges like privacy; decide once phone LLM latency is known.
 - Which UPI app to demo (GPay vs PhonePe): whichever `ScreenParser` reads best.
 
@@ -118,10 +120,12 @@ PHONE_STATE number delivery, mic during call, TTS Hindi voice, SMS sending, fore
 | Area | Owner |
 |---|---|
 | `core/`, `docs/`, evals, pitch | Ishan |
-| `app/sense`, `app/audio`, on-device tuning, whisper | Om |
+| `app/sense`, `app/audio`, on-device tuning, Vosk | Om |
 | `app/ui` | whoever has the phone in hand; keep PRs small |
 
 ## Session log (newest first, append only)
+
+- **2026-11-03 night (Vosk ASR):** Wired `com.alphacephei:vosk-android:0.3.75` behind `AsrEngine`. Models load off the main thread from external files; none present → `NoopAsr` (`ASR: none (push Vosk model)`). JNA comes in as the 5.18.1 AAR already declared by that POM (duplicate-class check passed; `jna:5.13.0` was not added). `docs/REPOS_TO_REUSE.md` was not in the tree. `:core:test` passed (167 tests, scorecard 30/30 scams paused, 0/24 normal paused), `:app:test` passed (Vosk JSON/dir tests included), `:app:assembleDebug` and `:app:lintDebug` passed. Nothing ran on a device. Next: push the two small models and do phone step 6.
 
 - **2026-11-03 evening (Ishan + Claude):** Refinement round. Built a live-model eval (`:core:llmEval`) and a held-out set; first held-out run exposed that the rule layer caught
   only 6/12 unseen scams, so the lexicon now covers vocabulary classes. The live model exposed two real bugs: a business NAME matching as a dictated payee (clinic got tier 3), and

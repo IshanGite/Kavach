@@ -121,6 +121,7 @@ fun HomeScreen(go: (String) -> Unit) {
     val ctx = LocalContext.current
     val c = ctx.container()
     val settings by c.settings.state.collectAsState()
+    val asr by c.asrState.collectAsState()
     val d by c.live.latest.collectAsState()
     val llm by c.live.llmStatus.collectAsState()
     val level by c.audioLevelDb.collectAsState()
@@ -153,7 +154,7 @@ fun HomeScreen(go: (String) -> Unit) {
             LinearProgressIndicator(progress = { (r?.risk ?: 0) / 100f }, modifier = Modifier.fillMaxWidth().height(10.dp),
                 color = when ((d?.tier?.level ?: 0)) { 0 -> Color(0xFF1B7F3B); 1 -> Color(0xFFB45F06); else -> Color(0xFFB3261E) })
             Text("Language model: $llm", fontSize = 13.sp)
-            Text("ASR: ${c.asr.name}", fontSize = 13.sp)
+            Text("ASR: ${asr.name}", fontSize = 13.sp)
             Text("Mic level: ${"%.0f".format(level)} dBFS", fontSize = 13.sp, fontFamily = FontFamily.Monospace)
         }
 

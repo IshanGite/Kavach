@@ -17,9 +17,9 @@ import kotlin.math.max
 import kotlin.math.sqrt
 
 /**
- * Speech-to-text plug point. The spec's primary choice is whisper.cpp via JNI (multilingual base/small, quantised).
- * Until that is wired, [NoopAsr] keeps everything else working: the app degrades to option D (no audio) and still reaches the pause tier.
- * Implementations must be fast to reject silence and must never write audio to disk.
+ * Speech-to-text plug point. [VoskAsr] transcribes on the device when a model folder has been pushed
+ * to external files; [NoopAsr] is option D (no audio) and still reaches the pause tier.
+ * Implementations must be fast to reject silence and must never write audio to disk or send it off the device.
  */
 interface AsrEngine {
     val name: String
@@ -27,8 +27,9 @@ interface AsrEngine {
     suspend fun transcribe(pcm: ShortArray, sampleRateHz: Int): String?
 }
 
+/** No Vosk model on disk. Capture still runs, but nothing is transcribed. */
 object NoopAsr : AsrEngine {
-    override val name = "none (option D: metadata and screen context only)"
+    override val name = "none (push Vosk model)"
     override suspend fun transcribe(pcm: ShortArray, sampleRateHz: Int): String? = null
 }
 

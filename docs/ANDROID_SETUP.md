@@ -29,6 +29,30 @@ JDK 17 for Gradle: `export JAVA_HOME=$(/usr/libexec/java_home -v 17)`.
 6. Verify the foreground package names of the UPI apps on THIS phone: `adb shell dumpsys window | grep mCurrentFocus` while each app is open,
    then edit `core/src/main/resources/payment_apps.json` if they differ.
 
+## On-device speech-to-text (Vosk, option A)
+
+Models are not in git (see `.gitignore`). Download the small English (India) and Hindi packs from
+[https://alphacephei.com/vosk/models](https://alphacephei.com/vosk/models):
+
+* [vosk-model-small-en-in-0.4](https://alphacephei.com/vosk/models/vosk-model-small-en-in-0.4.zip) (~36 MB)
+* [vosk-model-small-hi-0.22](https://alphacephei.com/vosk/models/vosk-model-small-hi-0.22.zip) (~42 MB)
+
+Unzip so each folder contains `am/` and `conf/` (not a second nested copy of the same name, though the loader accepts that too).
+Install the app once so the external-files directory exists, then push:
+
+```bash
+adb push vosk-model-small-en-in-0.4 /sdcard/Android/data/com.kavach.app/files/vosk-model-small-en-in-0.4
+adb push vosk-model-small-hi-0.22 /sdcard/Android/data/com.kavach.app/files/vosk-model-small-hi-0.22
+```
+
+That path is `Context.getExternalFilesDir(null)`. A missing folder is skipped. If neither folder is a model, Home stays on
+`ASR: none (push Vosk model)` and the app behaves as option D. Force-stop and reopen after pushing: models load once, off the
+main thread, at process start.
+
+Settings > Language picks which loaded model decodes each window (English → `en-in`, हिन्दी → `hi`). The other model stays
+in memory and is used only when the preferred one returns no words. Audio is decoded in RAM only. It is never written to disk
+and never uploaded. No extra permission is required beyond the microphone the app already asks for.
+
 ## Dev shortcuts
 
 ```bash

@@ -27,6 +27,10 @@ secrets.properties
 *.pcm
 captures/
 
+# Vosk models are pushed to the phone with adb. Never commit them.
+vosk-model-*/
+
 # Python companion
 __pycache__/
 .venv/
+photos/

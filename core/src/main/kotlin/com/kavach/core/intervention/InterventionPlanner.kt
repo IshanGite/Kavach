@@ -38,6 +38,9 @@ data class InterventionPlan(
     val questions: List<String>,
     val ifAnyYes: String,
     val spokenWarning: String?,
+    /** National cybercrime helpline, 1930. Set on a tier 2/3 pause; null on a nudge. */
+    val callHelpline: String? = null,
+    val callHelplineLabel: String? = null,
 )
 
 /** Templated, deterministic planner: always available, never waits on an LLM, never hallucinates. */
@@ -65,6 +68,7 @@ class InterventionPlanner(private val cfg: RiskConfig) {
             Tier.NUDGE -> T.nudgeSpoken(l)
             else -> T.pauseSpoken(l)
         }
+        val showHelpline = tier.level >= Tier.PAUSE.level
         return InterventionPlan(
             tier = tier,
             lang = l,
@@ -76,9 +80,11 @@ class InterventionPlanner(private val cfg: RiskConfig) {
             askSafeWord = familyClaim && profile.familySafeWordSet,
             callbackVerification = if (familyClaim) T.callbackVerify(l, callee?.name) else null,
             cooldownSeconds = cooldown,
-            questions = if (tier.level >= Tier.PAUSE.level) T.questions(l) else emptyList(),
+            questions = if (showHelpline) T.questions(l) else emptyList(),
             ifAnyYes = T.ifAnyYes(l),
             spokenWarning = spoken,
+            callHelpline = if (showHelpline) T.CYBER_HELPLINE else null,
+            callHelplineLabel = if (showHelpline) T.callHelpline(l) else null,
         )
     }
 
@@ -148,6 +154,15 @@ internal object T {
     fun nudgeSpoken(l: Lang) = pick(l, "Careful. This caller may be a scammer. Real police never ask for money on a call.", "सावधान। यह कॉलर ठग हो सकता है। असली पुलिस कॉल पर पैसे नहीं मांगती।")
     fun pauseSpoken(l: Lang) = pick(l, "Please stop. This looks like a scam. Hang up and call your family on their saved number.", "कृपया रुकिए। यह ठगी लग रही है। कॉल काटिए और अपने परिवार को उनके सेव नंबर पर फ़ोन कीजिए।")
     fun callNow(l: Lang, name: String) = pick(l, "Call $name now", "$name को अभी कॉल करें")
+
+    /** National cybercrime helpline number. */
+    const val CYBER_HELPLINE = "1930"
+
+    fun callHelpline(l: Lang) = pick(
+        l,
+        "Call $CYBER_HELPLINE (cybercrime helpline)",
+        "$CYBER_HELPLINE (साइबर अपराध हेल्पलाइन) पर कॉल करें",
+    )
     fun callbackVerify(l: Lang, name: String?) = pick(
         l,
         "Hang up and call ${name ?: "them"} on the saved number to check.",

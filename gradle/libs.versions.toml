@@ -8,6 +8,7 @@ composeBom = "2025.05.00"
 activityCompose = "1.10.1"
 coreKtx = "1.16.0"
 lifecycle = "2.9.0"
+vosk = "0.3.75"
 
 [libraries]
 kotlinx-coroutines-core = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-core", version.ref = "coroutines" }
@@ -22,6 +23,7 @@ androidx-compose-bom = { module = "androidx.compose:compose-bom", version.ref = 
 androidx-compose-ui = { module = "androidx.compose.ui:ui" }
 androidx-compose-material3 = { module = "androidx.compose.material3:material3" }
 androidx-compose-ui-tooling-preview = { module = "androidx.compose.ui:ui-tooling-preview" }
+vosk-android = { module = "com.alphacephei:vosk-android", version.ref = "vosk" }
 
 [plugins]
 kotlin-jvm = { id = "org.jetbrains.kotlin.jvm", version.ref = "kotlin" }

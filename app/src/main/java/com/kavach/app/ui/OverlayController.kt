@@ -72,6 +72,7 @@ class OverlayController(private val app: Context) {
             pauseUntilMs = engine.pauseUntilMs,
             now = engine::now,
             onCall = { plan.callTrusted?.let { c -> Actions.call(app, c.number) } },
+            onCallHelpline = { plan.callHelpline?.let { n -> Actions.dial(app, n) } },
             onAnswered = { yes -> engine.emit(QuestionsAnswered(engine.now(), yes)) },
             onProceed = { engine.emit(UserProceeded(engine.now())); dismiss() },
         )

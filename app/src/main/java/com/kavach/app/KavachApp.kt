@@ -13,6 +13,8 @@ import com.kavach.app.audio.AsrEngine
 import com.kavach.app.audio.AudioCaptureController
 import com.kavach.app.audio.CompanionServer
 import com.kavach.app.audio.NoopAsr
+import com.kavach.app.audio.VoskAsr
+import com.kavach.app.audio.preferModelId
 import com.kavach.app.engine.*
 import com.kavach.app.sense.VoipCallDetector
 import com.kavach.app.ui.OverlayController
@@ -24,6 +26,7 @@ import com.kavach.core.model.KavachEvent
 import com.kavach.core.sense.CallStateTracker
 import com.kavach.core.sim.ScenarioLoader
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlin.concurrent.thread
 
 /** Last screen the accessibility service read, for the Debug screen. Paste a dump into ScreenParserTest to tune a UPI app. */
 data class ScreenDump(val pkg: String, val atMs: Long, val texts: List<String>, val summary: String)
@@ -48,8 +51,14 @@ class Container(val app: Application) {
     val screenDump = MutableStateFlow<ScreenDump?>(null)
     val audioLevelDb = MutableStateFlow(-90f)
 
-    /** Plug a real speech-to-text engine in here (whisper.cpp JNI). See HANDOVER.md. */
-    @Volatile var asr: AsrEngine = NoopAsr
+    /**
+     * On-device Vosk once a model has loaded, otherwise [NoopAsr]. The load runs off the main thread;
+     * Home collects [asrState] so the status line updates when it finishes.
+     */
+    val asrState = MutableStateFlow<AsrEngine>(VoskAsr.LOADING)
+    var asr: AsrEngine
+        get() = asrState.value
+        set(value) { asrState.value = value }
     val audio = AudioCaptureController(app, live, settings, audioLevelDb) { asr }
     val companion = CompanionServer(settings, live)
 
@@ -91,6 +100,20 @@ class Container(val app: Application) {
 
     /** The engine whose session the report screen should describe: whichever saw the most recent activity. */
     fun reportEngine(): KavachEngine = sim?.takeIf { it.lastActivityMs > live.lastActivityMs } ?: live
+
+    init {
+        // Model() reads tens of megabytes and must not run on the main thread. Directory checks are in the same
+        // thread so a missing model becomes NoopAsr without a flash of a successful name.
+        thread(name = "kavach-vosk-load", isDaemon = true) {
+            val (engine, detail) = try {
+                VoskAsr.tryLoad(app) { preferModelId(settings.state.value.language) }
+            } catch (t: Throwable) {
+                null to "ASR load failed: ${t.javaClass.simpleName}"
+            }
+            asr = engine ?: NoopAsr
+            live.note(detail)
+        }
+    }
 }
 
 class KavachApp : Application() {

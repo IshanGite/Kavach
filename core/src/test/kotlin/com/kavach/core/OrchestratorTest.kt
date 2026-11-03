@@ -279,6 +279,35 @@ class InterventionPlanTest {
     }
 
     @Test
+    fun `tier 2 and tier 3 pauses offer a one-tap 1930 helpline beside the family call`() {
+        val en = plan("I am CBI officer. You will be arrested. Do not tell anyone. Transfer money.")
+        assertTrue(en.tier.level >= Tier.PAUSE.level)
+        assertNotNull(en.callTrusted, "the family button stays")
+        assertEquals("1930", en.callHelpline)
+        assertEquals("Call 1930 (cybercrime helpline)", en.callHelplineLabel)
+
+        val hi = plan("I am CBI officer. You will be arrested. Do not tell anyone. Transfer money.", lang = Lang.HI)
+        assertEquals("1930", hi.callHelpline)
+        assertEquals("1930 (साइबर अपराध हेल्पलाइन) पर कॉल करें", hi.callHelplineLabel)
+
+        val t2 = TestKit.orchestrator().let { it.onEvent(unknownCall()); it.onEvent(pay(5)); it.onEvent(pay(9, PayStage.AMOUNT_ENTERED, 50000.0, "n@ybl")) }
+        assertEquals(Tier.PAUSE, t2.tier)
+        assertEquals("1930", t2.plan!!.callHelpline)
+        assertEquals("Call 1930 (cybercrime helpline)", t2.plan!!.callHelplineLabel)
+        assertNotNull(t2.plan!!.callTrusted)
+
+        val t3 = TestKit.orchestrator().let { it.onEvent(RemoteAccessDetected(at(0), "AnyDesk")); it.onEvent(pay(5, PayStage.AMOUNT_ENTERED, 100.0, "n@ybl")) }
+        assertEquals(Tier.PAUSE_GUARDIAN, t3.tier)
+        assertEquals("1930", t3.plan!!.callHelpline)
+        assertEquals("Call 1930 (cybercrime helpline)", t3.plan!!.callHelplineLabel)
+
+        val nudge = TestKit.orchestrator().let { it.onEvent(unknownCall(channel = CallChannel.VOIP)); it.onEvent(Tick(at(5))) }
+        assertEquals(Tier.NUDGE, nudge.tier)
+        assertNull(nudge.plan!!.callHelpline, "a nudge must not grow a helpline button")
+        assertNull(nudge.plan!!.callHelplineLabel)
+    }
+
+    @Test
     fun `pause timers follow the spec - 30 s for tier 2 and 2 min for tier 3`() {
         // Tier 2: unknown call + payment app + new payee + big amount, no transcript at all (C=65).
         val t2 = TestKit.orchestrator().let { it.onEvent(unknownCall()); it.onEvent(pay(5)); it.onEvent(pay(9, PayStage.AMOUNT_ENTERED, 50000.0, "n@ybl")) }

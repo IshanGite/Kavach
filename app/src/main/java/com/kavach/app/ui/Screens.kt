@@ -83,6 +83,7 @@ fun SettingsScreen() {
                 FilterChip(selected = s.language == "EN", onClick = { up { it.copy(language = "EN") } }, label = { Text("English") })
                 FilterChip(selected = s.language == "HI", onClick = { up { it.copy(language = "HI") } }, label = { Text("हिन्दी") })
             }
+            Text("Also selects the on-device Vosk model: English uses en-in, Hindi uses hi.", fontSize = 12.sp)
             ToggleRow("Family safe word is set", s.safeWordSet, { v -> up { it.copy(safeWordSet = v) } }, "Only a flag. The word itself is never stored on the phone.")
             ToggleRow("Speak the tier-1 nudge aloud", s.speakNudges, { v -> up { it.copy(speakNudges = v) } }, "Tier 2/3 warnings are always spoken")
         }
@@ -152,6 +153,15 @@ object SimPlayer {
                 status.value = "${s.id}  t=${t}s / ${endT}s"
             }
             status.value = "finished ${s.id}"
+            // Keep the virtual clock running in real time: an open pause screen counts down off this clock, so freezing it
+            // would leave the user unable to ever continue (found on the OnePlus). Cancelled by stop().
+            var sinceTick = 0L
+            while (isActive) {
+                delay(250)
+                simNow.addAndGet(250)
+                sinceTick += 250
+                if (sinceTick >= 5000) { engine.emit(Tick(simNow.get())); sinceTick = 0 }
+            }
         }
     }
 }

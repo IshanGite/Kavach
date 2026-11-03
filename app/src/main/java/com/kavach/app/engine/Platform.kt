@@ -138,8 +138,18 @@ class ContactsLookup(private val ctx: Context) {
 object Actions {
     /** Prefers a direct call; falls back to the dialer if CALL_PHONE is not granted. */
     fun call(ctx: Context, number: String) {
-        val uri = Uri.parse("tel:" + Uri.encode(number))
         val action = if (ctx.hasPermission(Manifest.permission.CALL_PHONE)) Intent.ACTION_CALL else Intent.ACTION_DIAL
+        startTel(ctx, number, action)
+    }
+
+    /**
+     * Opens the dialer with [number] filled in and waits for the user to press call.
+     * Used for 1930 so no CALL_PHONE permission is required and the user confirms.
+     */
+    fun dial(ctx: Context, number: String) = startTel(ctx, number, Intent.ACTION_DIAL)
+
+    private fun startTel(ctx: Context, number: String, action: String) {
+        val uri = Uri.parse("tel:" + Uri.encode(number))
         ctx.startActivity(Intent(action, uri).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
     }
 
