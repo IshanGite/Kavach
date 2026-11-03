@@ -43,6 +43,11 @@ data class SettingsState(
     val asrEngine: String = "vosk",
     /** Whisper decode language: "auto" (hi/en/mr), "hi", "en" or "mr". */
     val speechLanguage: String = "auto",
+    /**
+     * Diagnostic. When on, the Debug log gets one note per accepted ASR window with the transcript text,
+     * language and mic level. In memory only, never persisted by the log, never sent anywhere. Off by default.
+     */
+    val showTranscriptInDebug: Boolean = false,
     val companionEnabled: Boolean = false,
     val companionToken: String = "",
 ) {

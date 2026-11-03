@@ -20,7 +20,8 @@ Everything runs on the phone (no cloud, no laptop at demo time). Cloud fallback 
 |---|---|---|
 | Kavach app: engine, risk rules, overlay, Hindi/English/Marathi keyword analyst | inside the APK | build from source (Step 1) |
 | Speech-to-text, fast, English + Hindi | Vosk, on the phone | auto-downloaded by `scripts/setup-phone.sh` (80 MB) |
-| Speech-to-text, multilingual (Hindi, Marathi, English) + language detect | Whisper base int8 via sherpa-onnx | auto-downloaded by the same script (250 MB) |
+| Speech-to-text, multilingual (Hindi, Marathi, English) + language detect | Whisper base + tiny int8 via sherpa-onnx | auto-downloaded by the same script (about 250 MB) |
+| Better Hindi transcripts (optional) | Whisper small int8 (best size on disk is used; steps down to base/tiny if the phone is too slow) | `./scripts/fetch-sherpa-onnx.sh --small` before `setup-phone.sh` (about 360 MB more) |
 | Optional scoring LLM | Termux + Ollama + `gemma3:1b` on the phone | Step 4 (0.8 GB) |
 
 Total on the phone about 1.5 GB. A phone with 6 GB+ RAM is recommended.

@@ -135,6 +135,11 @@ fun SettingsScreen() {
                     FilterChip(selected = s.audioSource == src, onClick = { up { it.copy(audioSource = src) } }, label = { Text(src.replace("VOICE_", "V_"), fontSize = 11.sp) })
                 }
             }
+            ToggleRow(
+                "Show transcript in Debug log (diagnostic, off by default)", s.showTranscriptInDebug,
+                { v -> up { it.copy(showTranscriptInDebug = v) } },
+                "Warning: while ON, the words heard on a call are kept as text in the Debug log in memory so you can tune recognition. They are never saved to disk and never sent anywhere, and are gone when the app closes. Turn OFF when you are done.",
+            )
             ToggleRow("Companion listener (option C)", s.companionEnabled, { v -> up { it.copy(companionEnabled = v) } }, "Receives transcripts from the laptop. Needs a token.")
             Field("Companion token (min 8 chars)", s.companionToken, { n -> up { it.copy(companionToken = n.trim()) } }, password = true)
         }

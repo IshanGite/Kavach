@@ -145,6 +145,9 @@ class AudioCaptureController(
                                 prevRaw = raw
                                 if (text.isNotEmpty()) {
                                     val lang = active.detectedLanguage.ifBlank { "auto" }
+                                    if (settings.state.value.showTranscriptInDebug) {
+                                        engine.note("transcript [$lang, mic ${"%.0f".format(gained.rmsDb)} dBFS]: $text")
+                                    }
                                     engine.emit(TranscriptChunk(engine.now(), text, lang, Speaker.CALLER))
                                 }
                             }

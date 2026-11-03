@@ -3,7 +3,8 @@
 # The app never downloads these at runtime.
 #
 #   ./scripts/fetch-sherpa-onnx.sh            # app/libs/sherpa-onnx-2.0.1.aar
-#   ./scripts/fetch-sherpa-onnx.sh --models   # also build/sherpa-models/sherpa-whisper/*.int8.onnx + tokens
+#   ./scripts/fetch-sherpa-onnx.sh --models   # also build/sherpa-models/sherpa-whisper/*.int8.onnx + tokens (base, tiny)
+#   ./scripts/fetch-sherpa-onnx.sh --small    # same, plus whisper small (about 360 MB int8) as small-*.int8.onnx
 #
 # Keep the AAR URL in sync with app/build.gradle.kts.
 set -euo pipefail
@@ -13,6 +14,16 @@ AAR_URL="https://github.com/k2-fsa/sherpa-onnx/releases/download/v2.0.1/sherpa-o
 AAR_PATH="app/libs/sherpa-onnx-2.0.1.aar"
 BASE_URL="https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/sherpa-onnx-whisper-base.tar.bz2"
 TINY_URL="https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/sherpa-onnx-whisper-tiny.tar.bz2"
+SMALL_URL="https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/sherpa-onnx-whisper-small.tar.bz2"
+WANT_MODELS=0
+WANT_SMALL=0
+for arg in "$@"; do
+  case "$arg" in
+    --models) WANT_MODELS=1 ;;
+    --small) WANT_MODELS=1; WANT_SMALL=1 ;;
+    *) echo "unknown option: $arg (use --models and/or --small)" >&2; exit 2 ;;
+  esac
+done
 MODEL_DIR="build/sherpa-models"
 OUT_DIR="$MODEL_DIR/sherpa-whisper"
 
@@ -26,8 +37,8 @@ else
 fi
 echo "AAR bytes: $(wc -c < "$AAR_PATH" | tr -d ' ')"
 
-if [[ "${1:-}" != "--models" ]]; then
-  echo "Models: re-run with --models to fetch whisper base + tiny int8 into $OUT_DIR"
+if [[ "$WANT_MODELS" != 1 ]]; then
+  echo "Models: re-run with --models (base + tiny) or --small (also small) to fetch int8 weights into $OUT_DIR"
   exit 0
 fi
 
@@ -77,6 +88,7 @@ PY
 }
 fetch_pack "$BASE_URL" "sherpa-onnx-whisper-base"
 fetch_pack "$TINY_URL" "sherpa-onnx-whisper-tiny"
+if [[ "$WANT_SMALL" == 1 ]]; then fetch_pack "$SMALL_URL" "sherpa-onnx-whisper-small"; fi
 
 echo
 echo "Push (after the app has been installed once):"

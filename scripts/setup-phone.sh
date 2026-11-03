@@ -27,6 +27,9 @@ done
 
 echo "== Whisper base int8 (Hindi, Marathi, English), about 250 MB"
 if [[ ! -d build/sherpa-models/sherpa-whisper ]]; then ./scripts/fetch-sherpa-onnx.sh --models; fi
+# Optional: ./scripts/fetch-sherpa-onnx.sh --small first. When small-*.int8.onnx is present it is pushed with the rest
+# and the app starts on small, stepping down to base/tiny if a phone cannot keep up.
+if ls build/sherpa-models/sherpa-whisper/small-encoder.int8.onnx >/dev/null 2>&1; then echo "   whisper small found, will push it"; fi
 
 echo "== Pushing to the phone ($DEST)"
 adb shell mkdir -p "$DEST"

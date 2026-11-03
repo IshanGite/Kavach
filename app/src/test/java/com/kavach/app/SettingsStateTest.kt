@@ -32,6 +32,7 @@ class SettingsStateTest {
         assertTrue(s.ollamaUrl.startsWith("http://127.0.0.1"))
         assertEquals(8_000, s.llmTimeoutMs)
         assertEquals("vosk", s.asrEngine)
+        assertFalse(s.showTranscriptInDebug)
     }
 
     @Test

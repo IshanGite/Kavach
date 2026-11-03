@@ -18,13 +18,15 @@ import kotlinx.coroutines.withContext
  * `language = ""` asks the multilingual model to detect the language. The code (for example `mr`)
  * is exposed on [detectedLanguage] and on the Home line as `whisper (detected: mr)`.
  *
- * Starts on int8 **base** with [WHISPER_THREADS] threads. If one window takes longer than the audio
- * it contains and tiny is on disk, later windows use tiny. A recogniser is not thread-safe, so one
- * lock serialises windows and model swap.
+ * Starts on the best int8 size on disk (small > base > tiny) with [WHISPER_THREADS] threads. If two
+ * consecutive windows decode slower than their stride, the engine steps down one size and writes one
+ * Debug note. It never steps back up during a call; the next call start re-evaluates from the best
+ * size. A recogniser is not thread-safe, so one lock serialises windows and model swap.
  */
 class SherpaWhisperAsr internal constructor(
     initial: WhisperFiles,
-    private val tiny: WhisperFiles?,
+    /** Every size on disk that this engine may use, best first. */
+    private val available: List<WhisperFiles>,
     private val note: (String) -> Unit,
     private val onLabel: (String) -> Unit,
     private val threads: Int,
@@ -35,16 +37,17 @@ class SherpaWhisperAsr internal constructor(
     private var current: WhisperFiles = initial
     private var recognizer: OfflineRecognizer = recognizer
     private var released = false
-    private var reportedStayOnBase = false
+    private val slow = StepDownCounter()
+    private var reevaluate = false
 
     @Volatile private var detected: String = ""
     private val sticky = WhisperLanguagePolicy.Sticky()
 
-    override val name: String get() = whisperHomeLabel(detected)
+    override val name: String get() = whisperHomeLabel(detected, current.size)
     override val detectedLanguage: String get() = detected
 
     override fun resetSession() {
-        synchronized(lock) { sticky.reset(); detected = "" }
+        synchronized(lock) { sticky.reset(); detected = ""; slow.reset(); reevaluate = current !== available.firstOrNull() }
     }
 
     override fun release() {
@@ -63,6 +66,7 @@ class SherpaWhisperAsr internal constructor(
                 for (i in pcm.indices) samples[i] = pcm[i] / 32768.0f
                 synchronized(lock) {
                     if (released) return@synchronized null
+                    if (reevaluate) { reevaluate = false; tryBest() }
                     val windowMs = pcm.size * 1000L / sampleRateHz
                     val started = System.nanoTime()
                     val decodeLang = WhisperLanguagePolicy.decodeLanguage(languageSetting(), sticky.current())
@@ -88,9 +92,7 @@ class SherpaWhisperAsr internal constructor(
                         detected = lang
                         onLabel(name)
                     }
-                    if (current.size == "base" && whisperDecodeSlowerThanWindow(ms, pcm.size, sampleRateHz)) {
-                        dropToTiny(ms)
-                    }
+                    if (slow.record(whisperDecodeOverranStride(ms, pcm.size, sampleRateHz))) stepDown(ms)
                     val text = result.text.trim()
                     if (WhisperLanguagePolicy.isJunk(text)) {
                         note("whisper window dropped as junk")
@@ -106,29 +108,42 @@ class SherpaWhisperAsr internal constructor(
         }
     }
 
-    /** Called with [lock] held. */
-    private fun dropToTiny(elapsedMs: Long) {
-        val files = tiny
-        if (files == null) {
-            if (!reportedStayOnBase) {
-                reportedStayOnBase = true
-                note("whisper-base slower than the window ($elapsedMs ms); tiny model not on disk, staying on base")
-            }
-            return
-        }
+    /** Called with [lock] held, at the first window of a new call. A failed load keeps the current size. */
+    private fun tryBest() {
+        val best = available.firstOrNull() ?: return
+        if (best === current) return
         try {
-            val next = openRecognizer(files, threads)
-            val old = recognizer
-            recognizer = next
-            current = files
-            runCatching { old.release() }
-            note("whisper-base slower than the window ($elapsedMs ms); dropped to tiny")
-        } catch (t: Throwable) {
-            if (!reportedStayOnBase) {
-                reportedStayOnBase = true
-                note("whisper-base slower than the window ($elapsedMs ms); tiny failed to load (${t.javaClass.simpleName}), staying on base")
+            swapTo(best)
+            note("whisper back to ${best.size} for the new call")
+            onLabel(name)
+        } catch (_: Throwable) { /* stay on the smaller model */ }
+    }
+
+    /** Called with [lock] held. Steps to the next smaller size on disk, one note per step. */
+    private fun stepDown(elapsedMs: Long) {
+        var size = nextWhisperSizeDown(current.size)
+        while (size != null) {
+            val files = available.firstOrNull { it.size == size }
+            if (files != null) {
+                try {
+                    val from = current.size
+                    swapTo(files)
+                    note("whisper-$from decoded slower than the stride twice (last $elapsedMs ms); stepped down to ${files.size}")
+                    onLabel(name)
+                    return
+                } catch (_: Throwable) { /* try the next size down */ }
             }
+            size = nextWhisperSizeDown(size)
         }
+    }
+
+    private fun swapTo(files: WhisperFiles) {
+        val next = openRecognizer(files, threads)
+        val old = recognizer
+        recognizer = next
+        current = files
+        slow.reset()
+        runCatching { old.release() }
     }
 
     companion object {
@@ -154,21 +169,16 @@ class SherpaWhisperAsr internal constructor(
             val set = resolveWhisperModels(root)
             val active = set.active
                 ?: return null to "ASR: whisper model missing (push int8 encoder, decoder and tokens into sherpa-whisper/)"
-            // Base is preferred. If it fails to open (for example it does not fit in RAM), try tiny
+            // Best size first. If it fails to open (for example it does not fit in RAM), try the next one
             // before giving the caller a reason to fall back to Vosk.
-            val order = listOfNotNull(set.base, set.tiny).ifEmpty { listOf(active) }
+            val order = set.ordered.ifEmpty { listOf(active) }
             var lastError: Throwable? = null
-            for (files in order) {
+            for ((idx, files) in order.withIndex()) {
                 try {
                     val rec = openRecognizer(files, threads)
-                    val fallback = if (files.size == "base") set.tiny else null
-                    val engine = SherpaWhisperAsr(files, fallback, note, onLabel, threads, rec, languageSetting)
-                    val detail = if (files.size != "base" && set.base != null) {
-                        val quant = if (files.int8) "int8" else "fp32"
-                        "ASR ready: whisper ${files.size} $quant, $threads threads (base failed to open: ${lastError?.javaClass?.simpleName ?: "unknown"})"
-                    } else {
-                        whisperReadyDetail(files, fallback != null, threads)
-                    }
+                    val engine = SherpaWhisperAsr(files, order.drop(idx), note, onLabel, threads, rec, languageSetting)
+                    val detail = whisperReadyDetail(files, order.drop(idx + 1).map { it.size }, threads) +
+                        if (idx > 0) " (${order[idx - 1].size} failed to open: ${lastError?.javaClass?.simpleName ?: "unknown"})" else ""
                     return engine to detail
                 } catch (t: Throwable) {
                     lastError = t

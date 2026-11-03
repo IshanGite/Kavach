@@ -107,9 +107,16 @@ sherpa-onnx is not on Maven. The Android AAR is Apache-2.0, about 47 MB (under t
 Weights are not in git. Fetch the int8 files (base, and tiny so a slow phone can drop down) and push them:
 
 ```bash
-./scripts/fetch-sherpa-onnx.sh --models
+./scripts/fetch-sherpa-onnx.sh --models    # base + tiny
+./scripts/fetch-sherpa-onnx.sh --small     # base + tiny + small (better Hindi)
 # extracts int8 encoder, decoder and tokens into build/sherpa-models/sherpa-whisper/
 ```
+
+| Size | Files in `sherpa-whisper/` | Approx. int8 size | Role |
+|---|---|---|---|
+| small | `small-encoder.int8.onnx`, `small-decoder.int8.onnx`, `small-tokens.txt` | about 360 MB | best accuracy, started on when present |
+| base | `base-encoder.int8.onnx`, `base-decoder.int8.onnx`, `base-tokens.txt` | about 130 MB | default |
+| tiny | `tiny-encoder.int8.onnx`, `tiny-decoder.int8.onnx`, `tiny-tokens.txt` | about 100 MB | last-resort fallback |
 
 Install the app once so the external-files directory exists, then:
 
@@ -120,14 +127,21 @@ adb push build/sherpa-models/sherpa-whisper/. "$DEST/"
 ```
 
 That path is `Context.getExternalFilesDir(null)/sherpa-whisper/`. The loader also accepts the unpacked
-`sherpa-onnx-whisper-base` / `sherpa-onnx-whisper-tiny` folders (including one extra nested copy) and a generic
+`sherpa-onnx-whisper-small` / `-base` / `-tiny` folders (including one extra nested copy) and a generic
 `encoder` / `decoder` / `tokens` trio in `sherpa-whisper/`. int8 is preferred over fp32. Force-stop and reopen, then
 choose Whisper in Settings. The Debug log records each window as `asr window 5.0s decoded in X ms`. The engine uses
-4 threads. If a base window takes longer than the audio in it and tiny is on disk, later windows use tiny and the log
-says so. PCM stays in memory.
+4 threads. The engine starts on the best size on disk (small > base > tiny). If two consecutive windows take longer
+than their stride (4.5 s for an 8 s window, the window length for 5 s fallback windows) it steps down one size and
+writes one Debug note. It never steps back up during a call; the next call re-evaluates. Home shows the active size
+(`ASR: whisper small`). PCM stays in memory.
+
+Settings > Audio > "Show transcript in Debug log" (diagnostic, off by default) writes one Debug note per accepted
+window with the transcript text, language and mic level, for tuning. It lives in memory only, is never written to disk
+and never sent anywhere. Leave it off outside tuning.
 
 Official packs: [sherpa-onnx-whisper-base.tar.bz2](https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/sherpa-onnx-whisper-base.tar.bz2)
-and [sherpa-onnx-whisper-tiny.tar.bz2](https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/sherpa-onnx-whisper-tiny.tar.bz2).
+[sherpa-onnx-whisper-tiny.tar.bz2](https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/sherpa-onnx-whisper-tiny.tar.bz2)
+and [sherpa-onnx-whisper-small.tar.bz2](https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/sherpa-onnx-whisper-small.tar.bz2).
 
 ## Dev shortcuts
 
