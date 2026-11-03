@@ -3,6 +3,16 @@
 Goal: run Kavach fully ON the phone (no laptop, no cloud), then test it against a real call and a real payment screen.
 Paste this file to Claude Code and say: "Follow docs/TUSHAR_SETUP.md step by step and ask me when a step needs my hands."
 
+## 0. Get the code and the files
+- Code (branch with everything): https://github.com/IshanGite/Kavach/tree/feat/om-helpline-vosk-asr
+  `git clone -b feat/om-helpline-vosk-asr https://github.com/IshanGite/Kavach.git && cd Kavach`
+- Big files are NOT in git (APK is ~110 MB, models ~330 MB): Om sends the `Kavach-dist` folder (Drive/WhatsApp/USB):
+  `Kavach-debug.apk`, `vosk-models/`, `sherpa-whisper/`, `audio/`.
+- No APK from Om? Build it yourself: JDK 17, Android SDK (platform 35, build-tools 35), `export ANDROID_HOME=<sdk>`,
+  `./gradlew :app:assembleDebug` -> `app/build/outputs/apk/debug/app-debug.apk`. (Models still come from the folder above or from
+  https://alphacephei.com/vosk/models and https://github.com/k2-fsa/sherpa-onnx/releases/tag/asr-models, or `scripts/fetch-sherpa-onnx.sh --models`.)
+- Sanity check before touching the phone: `./gradlew :core:test` (about 10 s) must be green.
+
 ## What runs where (final architecture)
 | Piece | Where | How it gets on the phone |
 |---|---|---|
@@ -80,6 +90,15 @@ Caller script (read slowly): "I am Inspector Sharma from Cyber Crime CBI. Your A
 - `Ollama HTTP 404` in the log: the model name does not match; `ollama list` in Termux, then set the model in Settings.
 - Pause screen stuck: fixed (timer runs after Simulate ends); force-stop Kavach if you ever see it.
 - Never complete a real payment during tests.
+
+## Time budget
+About 1 to 1.5 h with Claude Code driving: 15 min install + models + permissions, 15 min Termux/Ollama (0.8 GB download), 30-40 min tests.
+Skip Step 4 (Termux/Gemma) if short on time: the keyword analyst + on-device speech still work.
+
+## Instagram / WhatsApp call test (no SIM needed for the caller)
+Instagram app on the test phone, logged in. From another phone call that account via Instagram, put the test phone on speaker, read the caller script.
+Expect: Debug log `CallStarted`, transcript, nudge. (Call-screen detection is a text heuristic tuned on WhatsApp; if Instagram is not detected,
+send Om Debug > Last accessibility screen > Copy dump.)
 
 ## Report back to Om
 Phone model + Android version, test 2 table, Debug > Copy log for tests 3-5 and 8, and any screen that looked wrong.
