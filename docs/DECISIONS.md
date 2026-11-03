@@ -72,3 +72,14 @@ it showed a problem, we changed behaviour and recorded why here. **If you change
 * **ASR and phone-audio realism.** Evals feed clean text. Real Whisper output on speakerphone audio will be noisier; the
   keyword lexicon was written by the same people who wrote the scenarios, so treat the 17/17 as a regression gate, not as accuracy.
   Add held-out scenarios written by someone who has not seen the lexicon.
+
+## 35. AI-voice (synthetic speech) detector: tested, NOT shipped (2026-11-03)
+
+We validated two open-source Hugging Face detectors on the laptop before building anything: 11 AI clips (ElevenLabs, Microsoft Edge neural voices, en-IN and hi-IN) against 13 real human clips, each also degraded to phone-call quality (8 kHz, 300-3400 Hz band, AMR-NB + mu-law round trip, noise at 20 dB SNR). Our bar was AUC >= 0.85 on degraded audio.
+
+| Model | Clean AUC | Degraded AUC | Notes |
+|---|---|---|---|
+| MelodyMachine/Deepfake-audio-detection-V2 | 0.63 | 0.20 | inverted on degraded audio |
+| Gustking/wav2vec2-large-xlsr-deepfake-audio-classification | 1.00 | 0.76 | 45% of AI clips caught at 8% false positives; about 1.2 GB, too large for a phone |
+
+Both fail the bar, so nothing was integrated. The core keeps its plug point (`VoiceSpoofScore`, weak weight) with no producer. Small sample (24 clips) and a speaker-to-mic domain shift in the real demo would only make it worse. What we say to judges: "AI-voice detection is a weak signal even in research; we measured it, it did not hold up on phone-quality audio, so Kavach decides on coercion context instead of trying to spot the voice." The defence against voice clones is the family safe word and callback, not a classifier.

@@ -21,7 +21,8 @@
   "voip_call_apps": [
     { "package": "com.whatsapp", "name": "WhatsApp" },
     { "package": "com.skype.raider", "name": "Skype" },
-    { "package": "org.telegram.messenger", "name": "Telegram" }
+    { "package": "org.telegram.messenger", "name": "Telegram" },
+    { "package": "com.instagram.android", "name": "Instagram" }
   ],
   "pin_screen_hints": ["enter upi pin", "enter your upi pin", "upi pin", "यूपीआई पिन"]
 }
