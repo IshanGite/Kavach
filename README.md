@@ -21,8 +21,8 @@ The user can always proceed. Kavach never blocks a payment; it breaks the scamme
 |---|---|
 | `core`: events, risk fusion, orchestrator, LLM routing (Ollama + cloud), keyword analyst, guardian, report, simulator | built, tested, evaluated |
 | Eval suite: 32 scenarios (18 scam / 14 normal), fuzzed safety invariants, security gates | passing in CI |
-| `app`: Android sensors, overlay, TTS, SMS, PDF | next |
-| Audio capture (Day-0 test on the demo phone) and Whisper | next |
+| `app`: Android sensors, overlay, TTS, SMS, PDF, Simulate backup demo, Day-0 audio test | built, APK + lint green, **not yet run on a device** |
+| Speech-to-text (whisper.cpp) and on-phone Ollama | next (see `HANDOVER.md`) |
 
 ## Quick start
 
@@ -34,8 +34,8 @@ export JAVA_HOME=$(/usr/libexec/java_home -v 17)     # JDK 17
 ./gradlew :core:eval        # scorecard
 ```
 
-See [`CLAUDE.md`](CLAUDE.md) for architecture rules and workflow, [`docs/DECISIONS.md`](docs/DECISIONS.md) for where we deviate from the
-spec and why, and [`docs/ANDROID_SETUP.md`](docs/ANDROID_SETUP.md) for the phone.
+**New here (or a new Claude session)? Read [`HANDOVER.md`](HANDOVER.md) first.** See [`CLAUDE.md`](CLAUDE.md) for architecture rules and workflow, [`docs/DECISIONS.md`](docs/DECISIONS.md) for where we deviate from the
+spec and why, [`docs/ANDROID_SETUP.md`](docs/ANDROID_SETUP.md) for the phone, and [`docs/PHONE_TEST_PLAN.md`](docs/PHONE_TEST_PLAN.md) for on-device verification.
 
 ## How the decision is made
 

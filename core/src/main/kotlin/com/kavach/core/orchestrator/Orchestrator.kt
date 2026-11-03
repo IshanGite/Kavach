@@ -59,7 +59,7 @@ class Orchestrator(
     var profile: UserProfile = UserProfile(),
     private val isScamNumber: (String) -> Boolean = { false },
     zone: ZoneId = ZoneId.of("Asia/Kolkata"),
-    private val speakNudges: Boolean = false,
+    var speakNudges: Boolean = false,
 ) {
     private val dismissals = mutableMapOf<String, Int>()
     private val trusted = mutableSetOf<String>()

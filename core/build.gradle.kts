@@ -31,6 +31,12 @@ tasks.test {
     }
     // The eval suite writes its scorecard here (also uploaded by CI).
     systemProperty("kavach.reportDir", layout.buildDirectory.dir("reports/kavach-eval").get().asFile.absolutePath)
+    // RepoSecurityTest scans files outside this module (manifest, .gitignore, app sources). Declare them as inputs so a change
+    // there invalidates Gradle's up-to-date check; otherwise the security gates could be silently skipped.
+    inputs.files(rootProject.fileTree(rootProject.projectDir) {
+        include("app/src/**", ".gitignore", "companion/**", "scripts/**", ".github/**")
+        exclude("**/build/**")
+    }).withPropertyName("repoSecurityScanInputs")
 }
 
 // Scorecard-only run of the scenario evals: ./gradlew :core:eval

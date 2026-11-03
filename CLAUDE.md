@@ -1,5 +1,8 @@
 # Kavach: working agreement (for humans and Claude sessions)
 
+> **First thing every session: read `HANDOVER.md`** (current status, what is verified, what to do next).
+> **Last thing every session: update it** with `/handover`. Phone verification steps are in `docs/PHONE_TEST_PLAN.md`.
+
 Android guardian that detects the **coercion context** around a UPI payment (unknown live call + urgency + secrecy + payment app
 opened) and adds friction only then. Spec: "Kavach: Interrupting Coerced Payments Before They Complete". Hackathon build, two developers
 (Ishan, Om) working in parallel on GitHub. **Demo is the product: a smooth, reliable 4-minute demo beats breadth.**
@@ -8,8 +11,8 @@ opened) and adds friction only then. Spec: "Kavach: Interrupting Coerced Payment
 
 ```
 core/   Pure Kotlin/JVM. Events, risk engine, orchestrator, LLM routing, keyword analyst, report, scenario simulator. NO Android imports.
-app/    Android app (Compose + services). Thin: senses the OS, emits events, executes Effects. Added once the SDK is set up.
-companion/  (later) Python faster-whisper + WebSocket listener for the "option C" audio fallback.
+app/    Android app (Compose + services). Thin: senses the OS, emits events, executes Effects. Builds; NOT yet verified on a device.
+companion/  Python faster-whisper listener that POSTs transcripts to the phone (audio option C). `--stdin` mode needs no mic.
 docs/   DECISIONS.md (deviations from the spec), ANDROID_SETUP.md, TEAM.md
 core/src/main/resources/scenarios/*.json   Eval scenarios. Also power the in-app "Simulate" backup demo.
 core/src/main/resources/risk_config.json   Every weight. Tunable on stage without rebuilding.
@@ -30,6 +33,9 @@ core/src/main/resources/risk_config.json   Every weight. Tunable on stage withou
 export JAVA_HOME=$(/usr/libexec/java_home -v 17)   # Gradle 8.13 needs JDK 17, not 21+/27
 ./gradlew :core:test          # unit + eval scenarios + security gates (~5 s). RUN BEFORE EVERY PUSH.
 ./gradlew :core:eval          # just the scenario evals; prints the scorecard
+./gradlew :app:installDebug   # build + install on the connected phone
+./gradlew :app:assembleDebug :app:lintDebug   # what CI runs for the app
+export ANDROID_HOME=/opt/homebrew/share/android-commandlinetools   # SDK (see docs/ANDROID_SETUP.md)
 ./gradlew :core:llmEval       # same idea against a LIVE Ollama model (needs `ollama serve`; KAVACH_OLLAMA_MODEL, default gemma3:4b)
 ./scripts/install-hooks.sh    # one-time: pre-commit runs :core:test and blocks audio/keystores/secrets
 ```

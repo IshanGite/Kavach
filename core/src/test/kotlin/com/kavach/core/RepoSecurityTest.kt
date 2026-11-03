@@ -16,8 +16,17 @@ class RepoSecurityTest {
     private val root: File = generateSequence(File("").absoluteFile) { it.parentFile }.first { File(it, "settings.gradle.kts").exists() }
     private val skipDirs = setOf("build", ".gradle", ".git", ".kotlin", ".idea", "node_modules", ".venv", "__pycache__")
 
-    private fun files(filter: (File) -> Boolean = { true }): Sequence<File> =
-        root.walkTopDown().onEnter { it.name !in skipDirs }.filter { it.isFile && filter(it) }
+    /** Files git tracks or would track (so a gitignored local.properties is fine). Falls back to a directory walk without git. */
+    private val candidateFiles: List<File> by lazy {
+        val viaGit = runCatching {
+            val p = ProcessBuilder("git", "ls-files", "-co", "--exclude-standard").directory(root).redirectErrorStream(true).start()
+            val out = p.inputStream.bufferedReader().readLines(); if (p.waitFor() == 0) out else null
+        }.getOrNull()
+        viaGit?.map { File(root, it) }?.filter { it.isFile }
+            ?: root.walkTopDown().onEnter { it.name !in skipDirs }.filter { it.isFile }.toList()
+    }
+
+    private fun files(filter: (File) -> Boolean = { true }): Sequence<File> = candidateFiles.asSequence().filter(filter)
 
     private fun rel(f: File) = f.relativeTo(root).path
 

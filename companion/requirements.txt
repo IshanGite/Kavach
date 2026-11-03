@@ -1,0 +1,4 @@
+# Only needed for live microphone transcription. --stdin mode needs nothing.
+faster-whisper>=1.0.0
+sounddevice>=0.4.6
+numpy>=1.24

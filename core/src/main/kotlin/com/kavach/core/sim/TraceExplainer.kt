@@ -4,7 +4,7 @@ import com.kavach.core.model.*
 
 /** Step-by-step "why did it decide that" view. Used for failing evals, tuning on stage, and the judges' Q&A. */
 object TraceExplainer {
-    private fun label(e: KavachEvent): String = when (e) {
+    fun label(e: KavachEvent): String = when (e) {
         is CallStarted -> "CallStarted ${e.number}${if (e.isInContacts) " (contact ${e.contactName})" else " (unknown)"}${if (e.channel == CallChannel.VOIP) " VoIP" else ""}"
         is CallEnded -> "CallEnded ${e.durationSec}s"
         is TranscriptChunk -> "Transcript \"${e.text.take(60)}${if (e.text.length > 60) "…" else ""}\""

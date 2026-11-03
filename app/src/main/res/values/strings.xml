@@ -1,0 +1,4 @@
+<resources>
+    <string name="app_name">Kavach</string>
+    <string name="accessibility_description">Kavach reads which payment app is open, the amount and payee on its screen, and whether a screen-sharing app is running, only to pause a payment that looks like a scam. Nothing is sent off the phone.</string>
+</resources>

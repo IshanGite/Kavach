@@ -36,4 +36,11 @@ class InMemoryBaseline(initial: List<PastPayment> = emptyList()) : PaymentBaseli
     override fun record(payment: PastPayment) {
         payments += payment
     }
+
+    /** For persistence by the app layer. */
+    fun snapshot(): List<PastPayment> = payments.toList()
+
+    fun replaceAll(list: List<PastPayment>) {
+        payments.clear(); payments.addAll(list)
+    }
 }

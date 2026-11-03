@@ -17,6 +17,20 @@ it showed a problem, we changed behaviour and recorded why here. **If you change
 | 10 | **Guardian HOLD only from registered guardian numbers;** guardian alerts de-duplicated for 10 min. | "reply HOLD to extend" | Otherwise a scammer who learns the format can extend or spoof pauses. |
 | 11 | **Cloud fallback is the Anthropic Messages API** (`claude-haiku-5-5`), off by default. | "Gemini, Claude, or Groq-hosted Llama" | One provider to keep the privacy story simple. `LlmClient` makes swapping trivial. |
 
+### Android app decisions
+
+| # | Decision | Why |
+|---|---|---|
+| 12 | **Overlay uses `TYPE_ACCESSIBILITY_OVERLAY` first**, falling back to `TYPE_APPLICATION_OVERLAY`. | Needs no extra permission and is the most reliable on OEM ROMs; the accessibility service is required anyway for the pay-screen reading. |
+| 13 | **One foreground service owns mic capture,** started from the UI toggle, not from a background receiver. | Android 14 only grants the microphone foreground type if the app is visible at start. The receiver then only starts/stops the capture loop inside the already-running service. |
+| 14 | **Phone state comes from the `PHONE_STATE` broadcast,** not `TelephonyCallback`. | The callback does not carry the caller's number; the broadcast does (with READ_CALL_LOG). Parsing quirks live in the unit-tested `CallStateTracker`. |
+| 15 | **SMS comes from `SMS_RECEIVED`,** the notification listener skips SMS apps. | Gives the exact sender address, which is what authenticates a guardian's `HOLD` reply. |
+| 16 | **Sim and live engines are separate objects.** | A demo must never pollute real state or text real people (sim SMS is a dry run). |
+| 17 | **Companion listener is off by default and token-protected** (8 KB cap, constant-time compare, POST /transcript only). Recommended transport is `adb forward` over USB. | It is an inbound socket on a safety app; keep the surface tiny. |
+| 18 | **Cleartext HTTP allowed only to 127.0.0.1/localhost** (network security config + a test). Use `adb reverse` to reach the laptop's Ollama. | Keeps the "nothing leaves the phone" story mechanically true. |
+| 19 | **No cloud speech-to-text.** | The spec lists a Groq/OpenAI Whisper fallback, but that uploads raw call audio, which contradicts the spec's own privacy rule ("never raw audio"). The companion laptop is the sanctioned fallback. |
+| 20 | **VoIP detection is a UI-text heuristic,** with an ongoing-call notification check for call end. | No public API for third-party VoIP calls. Documented as fragile; tune on the demo phone. |
+
 ## Things the evals taught us (worth saying in the pitch)
 
 * **The saved-payee guard is a backstop, not a workhorse.** With the spec weights, a no-call payment can reach at most ~25 context
