@@ -43,6 +43,7 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.BugReport
 import androidx.compose.material.icons.filled.ContactPhone
 import androidx.compose.material.icons.filled.Description
+import androidx.compose.material.icons.filled.Payments
 import androidx.compose.material.icons.filled.GraphicEq
 import androidx.compose.material.icons.filled.HealthAndSafety
 import androidx.compose.material.icons.filled.Info
@@ -149,6 +150,7 @@ fun AppRoot(route: MutableState<String>, money: MutableState<Boolean>) {
     val title = mapOf(
         "home" to "Kavach", "setup" to "Setup", "settings" to "Settings", "simulate" to "Simulate (backup demo)",
         "audio" to "Day-0 audio test", "debug" to "Debug", "report" to "Complaint report", "live" to "Live view", "preflight" to "Pre-flight check",
+        KavachPay.ROUTE to KavachPay.TITLE,
     )[route.value] ?: "Kavach"
     val scheme = MaterialTheme.colorScheme
     Scaffold(
@@ -193,6 +195,7 @@ fun AppRoot(route: MutableState<String>, money: MutableState<Boolean>) {
                 "report" -> ReportScreen(money.value)
                 "live" -> LiveScreen()
                 "preflight" -> PreflightScreen()
+                KavachPay.ROUTE -> KavachPayScreen()
                 else -> HomeScreen(go = { route.value = it })
             }
         }
@@ -389,6 +392,7 @@ private fun HomeContent(model: HomeModel, onProtectionChange: (Boolean) -> Unit,
         }
 
         Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            WideButton(KavachPay.NAV_LABEL, onClick = { go(KavachPay.ROUTE) }, icon = Icons.Filled.Payments)
             WideButton("Simulate", onClick = { go("simulate") }, icon = Icons.Filled.PlayArrow)
             WideButton("Live view (for the judges' screen)", onClick = { go("live") }, icon = Icons.Filled.Visibility)
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
