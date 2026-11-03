@@ -6,7 +6,11 @@ import android.content.ClipboardManager
 import android.content.Context
 import android.media.AudioFormat
 import android.media.AudioRecord
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Phone
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -16,6 +20,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.PasswordVisualTransformation
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.kavach.app.audio.SAMPLE_RATE
@@ -48,7 +53,7 @@ private fun Field(label: String, value: String, onChange: (String) -> Unit, pass
 @Composable
 private fun ToggleRow(label: String, checked: Boolean, onChange: (Boolean) -> Unit, hint: String? = null) {
     Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.SpaceBetween) {
-        Column(Modifier.weight(1f)) { Text(label); hint?.let { Text(it, fontSize = 12.sp, color = Color.Gray) } }
+        Column(Modifier.weight(1f)) { Text(label); hint?.let { Text(it, fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant) } }
         Switch(checked = checked, onCheckedChange = onChange)
     }
 }
@@ -127,7 +132,11 @@ fun SettingsScreen() {
         }
 
         Section("Demo data") {
-            Button(onClick = { c.seedDemoBaseline() }) { Text("Seed demo payment history") }
+            Button(
+                onClick = { c.seedDemoBaseline() },
+                modifier = Modifier.fillMaxWidth().heightIn(min = 56.dp),
+                shape = RoundedCornerShape(16.dp),
+            ) { Text("Seed demo payment history", fontWeight = FontWeight.Bold) }
             Text("Usual payees and amounts, so 'new payee' and '8x usual' fire in the right places.", fontSize = 12.sp)
         }
     }
@@ -195,19 +204,30 @@ fun SimulateScreen() {
             Text("Speed:")
             listOf(1.0, 2.0, 4.0, 8.0).forEach { v -> FilterChip(selected = speed == v, onClick = { speed = v }, label = { Text("${v.toInt()}x") }) }
             Spacer(Modifier.weight(1f))
-            Button(onClick = { SimPlayer.stop(c) }, colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFB3261E))) { Text("Stop") }
+            Button(
+                onClick = { SimPlayer.stop(c) },
+                modifier = Modifier.heightIn(min = 56.dp),
+                shape = RoundedCornerShape(16.dp),
+                colors = ButtonDefaults.buttonColors(containerColor = Alarm, contentColor = Color.White),
+            ) { Text("Stop", fontWeight = FontWeight.Bold) }
         }
         Text("Status: $status", fontFamily = FontFamily.Monospace, fontSize = 12.sp)
-        if (!c.overlay.canDraw()) Text("⚠ Overlay not available: enable the accessibility service or 'Display over other apps' (Setup).", color = Color(0xFFB3261E), fontSize = 13.sp)
+        if (!c.overlay.canDraw()) Text("Overlay not available: enable the accessibility service or 'Display over other apps' (Setup).", color = alarmOnSurface(), fontWeight = FontWeight.SemiBold, fontSize = 14.sp)
         scenarios.sortedWith(compareBy({ it.kind != "scam" }, { it.id })).forEach { s ->
-            Card(Modifier.fillMaxWidth()) {
-                Row(Modifier.padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
-                    Column(Modifier.weight(1f)) {
+            Card(
+                Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(16.dp),
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
+                elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
+            ) {
+                Row(Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
                         Text(s.id, fontWeight = FontWeight.Bold, fontSize = 14.sp)
-                        Text(s.description, fontSize = 12.sp, color = Color.Gray)
-                        Text(if (s.kind == "scam") "SCAM" else "NORMAL", fontSize = 11.sp, color = if (s.kind == "scam") Color(0xFFB3261E) else Color(0xFF1B7F3B), fontWeight = FontWeight.Bold)
+                        Text(s.description, fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Text(if (s.kind == "scam") "SCAM" else "NORMAL", fontSize = 12.sp, color = if (s.kind == "scam") alarmOnSurface() else safeOnSurface(), fontWeight = FontWeight.Bold)
                     }
-                    Button(onClick = { SimPlayer.play(c, s, speed) }) { Text("Play") }
+                    Button(onClick = { SimPlayer.play(c, s, speed) }, modifier = Modifier.heightIn(min = 56.dp), shape = RoundedCornerShape(16.dp)) { Text("Play", fontWeight = FontWeight.Bold) }
                 }
             }
         }
@@ -244,8 +264,8 @@ fun AudioTestScreen() {
         Section("How to run") {
             Text("1. Start a normal call on SPEAKERPHONE (or a WhatsApp call), set the label below.\n2. Tap Start. The caller keeps talking for ~80 s: it records 20 s on each source.\n3. Read the verdict. Use the first source that says HAS SIGNAL.\n4. Repeat with a WhatsApp call (change the label).\nAll SILENT = use option C (laptop companion) or option D.", fontSize = 13.sp)
             Field("Label (cellular / whatsapp)", label, { label = it.filter { ch -> ch.isLetterOrDigit() }.take(16) })
-            if (!micGranted) Text("Grant the microphone permission on the Setup screen first.", color = Color(0xFFB3261E))
-            Button(enabled = micGranted && !running, onClick = {
+            if (!micGranted) Text("Grant the microphone permission on the Setup screen first.", color = alarmOnSurface(), fontWeight = FontWeight.SemiBold)
+            Button(enabled = micGranted && !running, modifier = Modifier.fillMaxWidth().heightIn(min = 56.dp), shape = RoundedCornerShape(16.dp), onClick = {
                 running = true; results.clear()
                 scope.launch(Dispatchers.IO) {
                     for (src in listOf("VOICE_RECOGNITION", "MIC", "CAMCORDER", "UNPROCESSED")) {
@@ -261,11 +281,15 @@ fun AudioTestScreen() {
         }
         results.forEach { r ->
             Section("${r.source}  [${r.label}]") {
-                Text(r.verdict, fontWeight = FontWeight.Bold, color = if (r.verdict.startsWith("HAS")) Color(0xFF1B7F3B) else Color(0xFFB3261E))
+                Text(r.verdict, fontWeight = FontWeight.Bold, color = if (r.verdict.startsWith("HAS")) safeOnSurface() else alarmOnSurface())
                 Text("peak=${r.peak}  rms=${"%.1f".format(r.db)} dBFS", fontFamily = FontFamily.Monospace, fontSize = 12.sp)
                 r.file?.let { Text(it, fontSize = 10.sp) }
-                if (r.verdict.startsWith("HAS")) Button(onClick = { c.settings.update { it.copy(audioSource = r.source) } }) {
-                    Text(if (settings.audioSource == r.source) "In use" else "Use this source")
+                if (r.verdict.startsWith("HAS")) Button(
+                    onClick = { c.settings.update { it.copy(audioSource = r.source) } },
+                    modifier = Modifier.heightIn(min = 56.dp),
+                    shape = RoundedCornerShape(16.dp),
+                ) {
+                    Text(if (settings.audioSource == r.source) "In use" else "Use this source", fontWeight = FontWeight.Bold)
                 }
             }
         }
@@ -311,23 +335,23 @@ fun DebugScreen() {
     val scammer = "+91 99887 76655"
 
     Page {
-        Text("⚠ Buttons here inject events into the LIVE engine (overlay, SMS and speech are real, SMS goes to your guardians).", fontSize = 12.sp, color = Color(0xFFB45F06))
+        Text("Buttons here inject events into the LIVE engine (overlay, SMS and speech are real, SMS goes to your guardians).", fontSize = 14.sp, fontWeight = FontWeight.SemiBold, color = cautionOnSurface())
         Section("Inject events") {
-            Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                Button(onClick = { c.onCallEvents(listOf(CallStarted(now(), scammer, isInContacts = false))) }) { Text("Unknown call") }
-                OutlinedButton(onClick = { c.onCallEvents(listOf(CallEnded(now(), 60))) }) { Text("Call ends") }
+            FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Button(onClick = { c.onCallEvents(listOf(CallStarted(now(), scammer, isInContacts = false))) }, modifier = Modifier.heightIn(min = 56.dp)) { Text("Unknown call") }
+                OutlinedButton(onClick = { c.onCallEvents(listOf(CallEnded(now(), 60))) }, modifier = Modifier.heightIn(min = 56.dp)) { Text("Call ends") }
             }
             Field("Transcript line (as if heard on the call)", line, { line = it })
-            Button(onClick = { live.emit(TranscriptChunk(now(), line, "auto", com.kavach.core.model.Speaker.CALLER)) }) { Text("Send transcript") }
-            Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                OutlinedButton(onClick = { live.emit(PaymentIntent(now(), "PhonePe", PayStage.OPENED)) }) { Text("Pay app") }
-                OutlinedButton(onClick = { live.emit(PaymentIntent(now(), "PhonePe", PayStage.AMOUNT_ENTERED, 50000.0, "verify.pay@oksbi")) }) { Text("₹50k") }
-                OutlinedButton(onClick = { live.emit(PaymentIntent(now(), "PhonePe", PayStage.PIN_SCREEN, 50000.0, "verify.pay@oksbi")) }) { Text("PIN") }
+            Button(onClick = { live.emit(TranscriptChunk(now(), line, "auto", com.kavach.core.model.Speaker.CALLER)) }, modifier = Modifier.heightIn(min = 56.dp)) { Text("Send transcript") }
+            FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                OutlinedButton(onClick = { live.emit(PaymentIntent(now(), "PhonePe", PayStage.OPENED)) }, modifier = Modifier.heightIn(min = 56.dp)) { Text("Pay app") }
+                OutlinedButton(onClick = { live.emit(PaymentIntent(now(), "PhonePe", PayStage.AMOUNT_ENTERED, 50000.0, "verify.pay@oksbi")) }, modifier = Modifier.heightIn(min = 56.dp)) { Text("₹50k") }
+                OutlinedButton(onClick = { live.emit(PaymentIntent(now(), "PhonePe", PayStage.PIN_SCREEN, 50000.0, "verify.pay@oksbi")) }, modifier = Modifier.heightIn(min = 56.dp)) { Text("PIN") }
             }
-            Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                OutlinedButton(onClick = { live.emit(PaymentDismissed(now())) }) { Text("Pay closed") }
-                OutlinedButton(onClick = { live.emit(RemoteAccessDetected(now(), "AnyDesk")) }) { Text("AnyDesk") }
-                OutlinedButton(onClick = { live.emit(MessageReceived(now(), "+91 98888 77777", "Your KYC will expire today, account blocked. https://sbi-kyc.xyz/u")) }) { Text("Scam SMS") }
+            FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                OutlinedButton(onClick = { live.emit(PaymentDismissed(now())) }, modifier = Modifier.heightIn(min = 56.dp)) { Text("Pay closed") }
+                OutlinedButton(onClick = { live.emit(RemoteAccessDetected(now(), "AnyDesk")) }, modifier = Modifier.heightIn(min = 56.dp)) { Text("AnyDesk") }
+                OutlinedButton(onClick = { live.emit(MessageReceived(now(), "+91 98888 77777", "Your KYC will expire today, account blocked. https://sbi-kyc.xyz/u")) }, modifier = Modifier.heightIn(min = 56.dp)) { Text("Scam SMS") }
             }
             settings.guardians.firstOrNull { it.number.isNotBlank() }?.let { g ->
                 OutlinedButton(onClick = { live.emit(GuardianHold(now(), g.number)) }) { Text("Guardian replies HOLD (${g.name})") }
@@ -342,7 +366,7 @@ fun DebugScreen() {
                         "${r.provider} ${r.latencyMs} ms\n${r.text.take(400)}"
                     } catch (e: Exception) { "FAILED: ${e.message}" }
                 }
-            }) { Text("Ping model with the transcript line") }
+            }, modifier = Modifier.heightIn(min = 56.dp)) { Text("Ping model with the transcript line") }
             Text(ping, fontFamily = FontFamily.Monospace, fontSize = 11.sp)
         }
         Section("Last accessibility screen (for tuning a UPI app)") {
@@ -384,16 +408,19 @@ fun ReportScreen(moneyHint: Boolean) {
     Page {
         if (moneySent) {
             Button(onClick = { Actions.call(ctx, report.actions.helpline) }, modifier = Modifier.fillMaxWidth().heightIn(min = 76.dp),
-                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFB3261E))) {
+                shape = RoundedCornerShape(16.dp),
+                colors = ButtonDefaults.buttonColors(containerColor = Alarm, contentColor = Color.White)) {
+                Icon(Icons.Filled.Phone, contentDescription = null, modifier = Modifier.size(28.dp))
+                Spacer(Modifier.width(8.dp))
                 Text("CALL 1930 NOW", fontSize = 26.sp, fontWeight = FontWeight.ExtraBold)
             }
             Text("Money was sent. Calling within the first hour gives the best chance of the bank freezing the funds. Then file below.", fontSize = 14.sp)
         }
         ToggleRow("Money was sent", moneySent, { moneySent = it })
-        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            if (!moneySent) OutlinedButton(onClick = { Actions.call(ctx, report.actions.helpline) }) { Text("Call 1930") }
-            Button(onClick = { Actions.openUrl(ctx, report.actions.portalUrl) }) { Text("cybercrime.gov.in") }
-            if (!moneySent) OutlinedButton(onClick = { Actions.openUrl(ctx, report.actions.chakshuUrl) }) { Text("Chakshu") }
+        FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            if (!moneySent) OutlinedButton(onClick = { Actions.call(ctx, report.actions.helpline) }, modifier = Modifier.heightIn(min = 56.dp)) { Text("Call 1930") }
+            Button(onClick = { Actions.openUrl(ctx, report.actions.portalUrl) }, modifier = Modifier.heightIn(min = 56.dp)) { Text("cybercrime.gov.in") }
+            if (!moneySent) OutlinedButton(onClick = { Actions.openUrl(ctx, report.actions.chakshuUrl) }, modifier = Modifier.heightIn(min = 56.dp)) { Text("Chakshu") }
         }
         Section("Review before sharing (it goes to police in ${s.userName.ifBlank { "your" }} name)") {
             OutlinedTextField(value = narrative, onValueChange = { narrative = it }, label = { Text("Description (editable)") }, modifier = Modifier.fillMaxWidth(), minLines = 5)
@@ -404,8 +431,8 @@ fun ReportScreen(moneyHint: Boolean) {
                 TextButton(onClick = { copy(ctx, f.label, f.value) }) { Text("Copy") }
             }
         }
-        Button(onClick = { ctx.startActivity(android.content.Intent.createChooser(PdfExporter.share(ctx, report, text), "Share complaint PDF").addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK)) }, modifier = Modifier.fillMaxWidth()) {
-            Text("Share as PDF")
+        Button(onClick = { ctx.startActivity(android.content.Intent.createChooser(PdfExporter.share(ctx, report, text), "Share complaint PDF").addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK)) }, modifier = Modifier.fillMaxWidth().heightIn(min = 56.dp), shape = RoundedCornerShape(16.dp)) {
+            Text("Share as PDF", fontWeight = FontWeight.Bold, textAlign = TextAlign.Center)
         }
         if (report.evidenceQuotes.isNotEmpty()) Section("Evidence quotes") { report.evidenceQuotes.forEach { Text("• \"$it\"", fontSize = 13.sp) } }
         Section("Timeline") { report.timelineText.forEach { Text(it, fontFamily = FontFamily.Monospace, fontSize = 10.sp) } }

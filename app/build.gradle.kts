@@ -88,6 +88,7 @@ dependencies {
     implementation(platform(libs.androidx.compose.bom))
     implementation(libs.androidx.compose.ui)
     implementation(libs.androidx.compose.material3)
+    implementation(libs.androidx.compose.material.icons.extended)
     implementation(libs.androidx.compose.ui.tooling.preview)
     // On-device ASR. vosk-android 0.3.75 already depends on net.java.dev.jna:jna:5.18.1 as an AAR.
     implementation(libs.vosk.android)

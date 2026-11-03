@@ -1,15 +1,24 @@
 package com.kavach.app.ui
 
-import androidx.compose.foundation.layout.*
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.Button
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import com.kavach.app.container
 import com.kavach.app.engine.DynamicLlmClient
 import com.kavach.core.intervention.InterventionPlan
@@ -59,22 +68,22 @@ fun PreflightScreen() {
     )
 
     Page {
-        Text("Run this at T-15 minutes. Green everywhere, and you have heard and seen the three tests below.", fontSize = 13.sp)
-        lines.forEach { l ->
-            Text((when (l.ok) { true -> "✅ "; false -> "❌ "; null -> "➖ " }) + l.label, fontSize = 14.sp, fontWeight = if (l.ok == false) FontWeight.Bold else FontWeight.Normal,
-                color = if (l.ok == false) Color(0xFFB3261E) else Color.Unspecified)
-            if (l.ok == false) Text("   ${l.detail}", fontSize = 12.sp, color = Color.Gray)
-        }
+        Text("Run this at T-15 minutes. Green everywhere, and you have heard and seen the three tests below.", style = MaterialTheme.typography.bodyLarge)
+        lines.forEach { l -> StatusLine(l.ok, l.label, l.detail.takeIf { l.ok == false }) }
         Section("Live tests") {
+            val wide = Modifier.fillMaxWidth().heightIn(min = 56.dp)
+            val shape = RoundedCornerShape(16.dp)
+            val pad = PaddingValues(horizontal = 16.dp, vertical = 8.dp)
             Button(onClick = { scope.launch(Dispatchers.Main) {
                 val e = c.live; e.pauseUntilMs.value = e.now() + 6_000
                 c.overlay.showPause(e, sample); c.speaker.speak(sample.spokenWarning.orEmpty(), sample.lang.tag)
-            } }, modifier = Modifier.fillMaxWidth()) { Text("Show a test pause screen + speak it") }
-            Text("You should see the full-screen pause, hear the warning, and be able to continue after 6 s.", fontSize = 12.sp)
+            } }, modifier = wide, shape = shape, contentPadding = pad) {
+                Text("Show a test pause screen + speak it", fontWeight = FontWeight.Bold, textAlign = TextAlign.Center, modifier = Modifier.weight(1f))
+            }
+            Text("You should see the full-screen pause, hear the warning, and be able to continue after 6 s.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
             Button(onClick = {
                 llm = Line(null, "Pinging model...", "")
                 scope.launch(Dispatchers.IO) {
-                    val t0 = System.currentTimeMillis()
                     llm = try {
                         val r = DynamicLlmClient(c.settings, c.live.llmStatus).analyze(LlmRequest(
                             if (s.compactPrompt) Prompts.TRANSCRIPT_SYSTEM_COMPACT else Prompts.TRANSCRIPT_SYSTEM,
@@ -84,9 +93,13 @@ fun PreflightScreen() {
                     } catch (e: Exception) { Line(false, "Model unavailable", "${e.message} (keyword analyst will cover)") }
                     c.live.warmUpModel()
                 }
-            }, modifier = Modifier.fillMaxWidth()) { Text("Ping the language model") }
-            llm?.let { Text((when (it.ok) { true -> "✅ "; false -> "⚠ "; null -> "… " }) + it.label + (if (it.detail.isNotEmpty()) "\n   " + it.detail else ""), fontFamily = FontFamily.Monospace, fontSize = 12.sp) }
-            Button(onClick = { c.speaker.speak(if (s.language == "HI") "कवच तैयार है।" else "Kavach is ready.", sample.lang.tag) }, modifier = Modifier.fillMaxWidth()) { Text("Speak a test phrase") }
+            }, modifier = wide, shape = shape, contentPadding = pad) {
+                Text("Ping the language model", fontWeight = FontWeight.Bold, textAlign = TextAlign.Center, modifier = Modifier.weight(1f))
+            }
+            llm?.let { StatusLine(it.ok, it.label, it.detail.ifBlank { null }) }
+            Button(onClick = { c.speaker.speak(if (s.language == "HI") "कवच तैयार है।" else "Kavach is ready.", sample.lang.tag) }, modifier = wide, shape = shape, contentPadding = pad) {
+                Text("Speak a test phrase", fontWeight = FontWeight.Bold, textAlign = TextAlign.Center, modifier = Modifier.weight(1f))
+            }
         }
     }
 }
