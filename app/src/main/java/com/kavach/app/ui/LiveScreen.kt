@@ -90,6 +90,7 @@ fun LiveScreen() {
     val d by engine.latest.collectAsState()
     val log by engine.log.collectAsState()
     val llm by engine.llmStatus.collectAsState()
+    val labelLang = c.settings.state.collectAsState().value.lang()
     val session = remember(tick) { engine.orchestrator.session }
 
     val r = d?.result
@@ -127,7 +128,7 @@ fun LiveScreen() {
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
                         Text("${shownRisk.toInt()}", color = col, fontSize = 72.sp, fontWeight = FontWeight.ExtraBold)
                         Text(listOf("NORMAL", "CAUTION", "PAUSE", "PAUSE + GUARDIAN")[tier.coerceIn(0, 3)], color = Color.White, fontSize = 16.sp, fontWeight = FontWeight.Bold)
-                        Text("context ${r?.contextScore ?: 0}   language ${r?.languageScore ?: "–"}", color = Dim, fontSize = 13.sp, fontFamily = FontFamily.Monospace)
+                        Text(RiskLabels.compact(labelLang, tier, r?.contextScore ?: 0, r?.languageScore, risk), color = Dim, fontSize = 13.sp, fontFamily = FontFamily.Monospace)
                     }
                 }
                 Text("tier marks  35  ·  60  ·  80", color = Dim, fontSize = 12.sp, fontFamily = FontFamily.Monospace)

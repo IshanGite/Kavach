@@ -256,16 +256,15 @@ private fun AdviceBlock(view: WidgetView) {
 @Composable
 private fun RiskMeter(view: WidgetView) {
     val colour = tierColor(view.tier)
-    val l = view.languageScore?.toString() ?: "–"
     Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
         Text(view.paymentRiskLabel, color = Muted, fontSize = 12.sp, fontWeight = FontWeight.Bold)
         Text(
-            "${view.tierLabel}    C ${view.contextScore}    L $l    R ${view.risk}",
+            view.scoreLine,
             color = TextOnDark,
             fontFamily = FontFamily.Monospace,
             fontSize = 14.sp,
             modifier = Modifier.semantics {
-                contentDescription = "${view.tierLabel}. C ${view.contextScore}. L $l. R ${view.risk}"
+                contentDescription = view.scoreLine
             },
         )
         Box(Modifier.fillMaxWidth().height(12.dp).clip(RoundedCornerShape(6.dp)).background(Track)) {

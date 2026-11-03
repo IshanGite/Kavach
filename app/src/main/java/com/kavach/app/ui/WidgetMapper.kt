@@ -77,6 +77,7 @@ data class WidgetView(
     val backLabel: String,
     val recentLabel: String,
     val alertCount: Int,
+    val scoreLine: String = "",
 ) {
     /** There is no state in which the overlay eats taps that land outside the bubble or the card. */
     val consumesTouchesOutside: Boolean get() = false
@@ -219,6 +220,7 @@ object WidgetMapper {
                 backLabel = WidgetCopy.back(lang),
                 recentLabel = WidgetCopy.recent(lang),
                 alertCount = surface.scamNotices.size,
+                scoreLine = RiskLabels.compact(lang, surface.tierLevel, surface.contextScore, surface.languageScore, surface.risk),
             )
         }
 

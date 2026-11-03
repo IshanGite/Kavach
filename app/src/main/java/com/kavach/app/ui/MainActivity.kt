@@ -236,6 +236,8 @@ private data class HomeModel(
     val contextScore: Int,
     val languageScore: Int?,
     val risk: Int,
+    val ruleCodes: List<com.kavach.core.risk.RuleCode> = emptyList(),
+    val lang: com.kavach.core.intervention.Lang = com.kavach.core.intervention.Lang.EN,
     val asrLine: String,
     val llmLine: String,
     val micDb: Float,
@@ -268,6 +270,8 @@ fun HomeScreen(go: (String) -> Unit) {
             contextScore = d?.result?.contextScore ?: 0,
             languageScore = d?.result?.languageScore,
             risk = d?.result?.risk ?: 0,
+            ruleCodes = d?.result?.reasonCodes().orEmpty(),
+            lang = settings.lang(),
             asrLine = asrLine,
             llmLine = llm,
             micDb = level,
@@ -371,9 +375,9 @@ private fun HomeContent(model: HomeModel, onProtectionChange: (Boolean) -> Unit,
                 strokeCap = StrokeCap.Round,
             )
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                ScoreMeter("C", "Context", model.contextScore.toString(), model.contextScore / 100f, MaterialTheme.colorScheme.primary)
-                ScoreMeter("L", "Language", model.languageScore?.toString() ?: "-", (model.languageScore ?: 0) / 100f, if (model.languageScore == null) MaterialTheme.colorScheme.outline else MaterialTheme.colorScheme.secondary)
-                ScoreMeter("R", "Risk", model.risk.toString(), model.risk / 100f, accent)
+                ScoreMeter(RiskLabels.name(RiskLabels.Bar.SITUATION, model.lang), RiskLabels.helper(RiskLabels.Bar.SITUATION, model.lang, model.ruleCodes), model.contextScore.toString(), model.contextScore / 100f, MaterialTheme.colorScheme.primary)
+                ScoreMeter(RiskLabels.name(RiskLabels.Bar.SAYING, model.lang), RiskLabels.helper(RiskLabels.Bar.SAYING, model.lang, languageScore = model.languageScore), model.languageScore?.toString() ?: "-", (model.languageScore ?: 0) / 100f, if (model.languageScore == null) MaterialTheme.colorScheme.outline else MaterialTheme.colorScheme.secondary)
+                ScoreMeter(RiskLabels.name(RiskLabels.Bar.RISK, model.lang), RiskLabels.helper(RiskLabels.Bar.RISK, model.lang, tierLevel = model.tierLevel), model.risk.toString(), model.risk / 100f, accent)
             }
             SignalChip(Icons.Filled.Mic, "On-device speech", model.asrLine, speechOn)
             SignalChip(Icons.Filled.Psychology, "Local AI", llmDetail, modelOn)
@@ -411,7 +415,7 @@ private fun RowScope.ScoreMeter(letter: String, caption: String, value: String, 
     val anim by animateFloatAsState(fraction.coerceIn(0f, 1f), tween(600), label = letter)
     Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(8.dp)) {
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.Bottom) {
-            Text(letter, fontWeight = FontWeight.ExtraBold, fontSize = 16.sp, color = color)
+            Text(letter, fontWeight = FontWeight.ExtraBold, fontSize = 13.sp, color = color, modifier = Modifier.weight(1f))
             Text(value, fontFamily = FontFamily.Monospace, fontWeight = FontWeight.Bold, fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurface)
         }
         LinearProgressIndicator(

@@ -41,3 +41,4 @@ app/libs/*.partial
 __pycache__/
 .venv/
 photos/
+.claude/worktrees/
