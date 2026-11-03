@@ -25,6 +25,12 @@ it showed a problem, we changed behaviour and recorded why here. **If you change
   (`scam-option-d-no-audio`).
 * **The pause survives a dead LLM, a hijacked LLM and a 12 s LLM** (`scam-llm-*`, `scam-option-d-no-audio`).
 
+* **Live model check (Mac, Ollama `gemma3:4b`, `./gradlew :core:llmEval`):** schema-valid JSON, scam scored 97, normal call 0.
+  Latency was **10.9 s cold / 5.5 s warm on a laptop**, with the 3 few-shot examples in the prompt. A phone CPU will be several times
+  slower, so **expect the 8 s budget to time out on the demo phone**; the keyword analyst then carries the language layer and the pause
+  still fires. Before the demo, measure on the phone and consider: `gemma3:1b`, fewer/shorter few-shots, `num_predict` ~150,
+  `keep_alive` so the model stays loaded, and warming it with a dummy request at app start.
+
 ## Known gaps (on the scorecard, not hidden)
 
 * **Investment / Telegram-task scams with no live call** (`scam-investment-telegram-tasks`). Needs a repeated-new-payee and
