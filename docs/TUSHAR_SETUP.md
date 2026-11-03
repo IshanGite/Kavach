@@ -1,104 +1,105 @@
-# Kavach: SIM-phone setup and test (for Tushar and his Claude Code)
+# Kavach: setup and test guide (for Tushar and his Claude Code)
 
-Goal: run Kavach fully ON the phone (no laptop, no cloud), then test it against a real call and a real payment screen.
-Paste this file to Claude Code and say: "Follow docs/TUSHAR_SETUP.md step by step and ask me when a step needs my hands."
+Hackathon problem statement: **FIN-11, "Interrupting Coerced Payments Before They Complete"** (not FIN-06 or FIN-04).
+Deliverables: simulated payment app with a risk engine, a scenario suite (normal vs coerced), and a role-play test of interventions.
+Paste this file to Claude Code and say: "Follow docs/TUSHAR_SETUP.md step by step, run commands yourself, and ask me when a step needs my hands."
+Nothing needs to be sent to you: everything below is downloaded from GitHub or the model authors' public sites.
 
-## 0. Get the code and the files
-- Code (branch with everything): https://github.com/IshanGite/Kavach/tree/feat/om-helpline-vosk-asr
-  `git clone -b feat/om-helpline-vosk-asr https://github.com/IshanGite/Kavach.git && cd Kavach`
-- Big files are NOT in git (APK is ~110 MB, models ~330 MB): Om sends the `Kavach-dist` folder (Drive/WhatsApp/USB):
-  `Kavach-debug.apk`, `vosk-models/`, `sherpa-whisper/`, `audio/`.
-- No APK from Om? Build it yourself: JDK 17, Android SDK (platform 35, build-tools 35), `export ANDROID_HOME=<sdk>`,
-  `./gradlew :app:assembleDebug` -> `app/build/outputs/apk/debug/app-debug.apk`. (Models still come from the folder above or from
-  https://alphacephei.com/vosk/models and https://github.com/k2-fsa/sherpa-onnx/releases/tag/asr-models, or `scripts/fetch-sherpa-onnx.sh --models`.)
-- Sanity check before touching the phone: `./gradlew :core:test` (about 10 s) must be green.
+## How it should behave (what we are testing)
+Kavach is an always-on guardian. Once Protection is ON it sits in the background and shows nothing during normal life.
+- **Incoming/active call from an unknown number**: it starts listening (on-device speech-to-text) and scoring the conversation.
+- **Scam-sounding call + you open a payment app**: a full-screen pause appears BEFORE the PIN screen: the reasons, a cooling-off timer,
+  three questions, one-tap "Call 1930" and "Call <family>", and a guardian SMS at the highest level. The user can always continue after the timer.
+- **Scammy notification or SMS** (WhatsApp, Telegram, SMS, fake KYC/lottery/"police" messages): it raises a warning that explains
+  why it looks like a scam and what to do (do not click, do not pay, call 1930). Normal notifications are ignored.
+- **Normal life**: saved contact calls, ordinary payments, family chats: nothing appears.
+Everything runs on the phone (no cloud, no laptop at demo time). Cloud fallback exists but is OFF by default.
 
-## What runs where (final architecture)
-| Piece | Where | How it gets on the phone |
+## What runs on the phone
+| Piece | Where | How you get it |
 |---|---|---|
-| Kavach app (engine, overlay, scoring) | phone | `Kavach-debug.apk` (`adb install -r`) |
-| Speech-to-text, fast, English + Hindi | phone, Vosk | push 2 model folders (80 MB) to the app's files dir |
-| Speech-to-text, multilingual (Hindi, Marathi, English), language detect | phone, Whisper via sherpa-onnx | push the `sherpa-whisper/` folder (about 160 MB) |
-| Language scoring LLM (optional, accuracy booster) | phone, Termux + Ollama + `gemma3:1b` (806 MB) | Termux APK + `pkg install ollama` + `ollama pull gemma3:1b` |
-| Keyword analyst (EN/HI/Hinglish/Marathi), risk engine | phone, inside the app | nothing to install, it is the always-on fallback |
+| Kavach app: engine, risk rules, overlay, Hindi/English/Marathi keyword analyst | inside the APK | build from source (Step 1) |
+| Speech-to-text, fast, English + Hindi | Vosk, on the phone | auto-downloaded by `scripts/setup-phone.sh` (80 MB) |
+| Speech-to-text, multilingual (Hindi, Marathi, English) + language detect | Whisper base int8 via sherpa-onnx | auto-downloaded by the same script (250 MB) |
+| Optional scoring LLM | Termux + Ollama + `gemma3:1b` on the phone | Step 4 (0.8 GB) |
 
-The APK does NOT contain the model files (too large). Everything else is on the phone after setup, and needs no cable or Wi-Fi at demo time.
+Total on the phone about 1.5 GB. A phone with 6 GB+ RAM is recommended.
 
-## Prerequisites
-- Android phone with a SIM and a UPI app (GPay/PhonePe) set up, Android 10+, 6 GB+ RAM recommended.
-- Laptop with `adb` (Android platform-tools), USB debugging ON. OnePlus/Oppo/Xiaomi: also enable the extra
-  "USB debugging (Security settings)" / "Disable permission monitoring" toggle so `adb shell pm grant` works.
+## Prerequisites (install these first)
+- Android phone with a SIM and a UPI app (GPay or PhonePe) already set up, Android 10+.
+- Laptop with: Git, JDK 17, Android SDK (platform 35, build-tools 35, platform-tools / `adb`), Python 3, curl, unzip.
+  `export ANDROID_HOME=<your sdk path>` (Windows: `$HOME/AppData/Local/Android/Sdk`). Use Git Bash on Windows.
+- Phone: Developer options > USB debugging ON. OnePlus/Oppo/Xiaomi: also turn on "Disable permission monitoring" / "USB debugging (Security settings)".
 - Wi-Fi on the phone for the one-time Termux/Ollama download.
-- Files from Om: `Kavach-debug.apk`, `vosk-models/*.zip`, `sherpa-whisper/` folder, `audio/*.wav`.
 
-## Step 1: install the app
+## Step 1: get the code and install everything (one command)
 ```bash
-adb install -r Kavach-debug.apk
-adb shell am start -n com.kavach.app/.ui.MainActivity     # open once
+git clone -b feat/om-helpline-vosk-asr https://github.com/IshanGite/Kavach.git
+cd Kavach
+./gradlew :core:test              # about 10 s, must be green (0 normal scenarios paused)
+adb devices                       # the phone must show as "device"
+./scripts/setup-phone.sh          # builds + installs the APK, downloads and pushes Vosk + Whisper models
 ```
+If a download is blocked, the sources are: Vosk https://alphacephei.com/vosk/models (`vosk-model-small-en-in-0.4`, `vosk-model-small-hi-0.22`),
+Whisper https://github.com/k2-fsa/sherpa-onnx/releases/tag/asr-models (`sherpa-onnx-whisper-base`). Models go in
+`/sdcard/Android/data/com.kavach.app/files/`.
 
-## Step 2: push speech models (once)
-```bash
-unzip vosk-models/vosk-model-small-en-in-0.4.zip && unzip vosk-models/vosk-model-small-hi-0.22.zip
-D=/sdcard/Android/data/com.kavach.app/files
-adb shell mkdir -p $D
-adb push vosk-model-small-en-in-0.4 $D/
-adb push vosk-model-small-hi-0.22   $D/
-adb push sherpa-whisper             $D/          # optional, multilingual incl. Marathi
-```
-Open Kavach > Home: it should say `ASR: vosk on-device (en-in+hi)`. In Settings > Audio you can switch to Whisper.
-
-## Step 3: permissions
-Home > Fix now > grant Phone, Contacts, Mic, SMS, Notifications, Display over other apps, battery exemption.
-Android 13+: App info > ⋮ > Allow restricted settings, THEN Settings > Accessibility > Kavach ON.
-Setup > "Request caller ID role" > Allow (lets Kavach read the caller number without READ_CALL_LOG).
+## Step 2: permissions (needs your hands)
+Open Kavach > Home > **Fix now**: grant Phone, Contacts, Mic, SMS, Notifications, Display over other apps, battery exemption.
+On OnePlus with "Disable permission monitoring" ON, Claude can grant runtime permissions with
+`adb shell pm grant com.kavach.app android.permission.<NAME>` (READ_PHONE_STATE, READ_CALL_LOG, READ_CONTACTS, RECORD_AUDIO, SEND_SMS, RECEIVE_SMS, POST_NOTIFICATIONS).
+Android 13+: App info > ⋮ > Allow restricted settings, THEN Settings > Accessibility > Kavach ON, and Notification access > Kavach ON.
+Setup > **Request caller ID role** > Allow (reads the caller number without the restricted call-log permission).
 Reinstalling the app turns Accessibility OFF again: switch it back on.
-Settings > "Seed demo payment history", add one guardian number, set language. Home > Protection ON.
-Target: `Readiness: all set`.
+Then Settings > "Seed demo payment history", add one guardian number (a friend's), Home > Protection ON. Target: `Readiness: all set`.
 
-## Step 4: on-phone LLM (optional but recommended)
-1. Install Termux from GitHub (not Play Store): https://github.com/termux/termux-app/releases (the `arm64-v8a` debug APK).
-2. In Termux:
+## Step 3 (optional): Whisper instead of Vosk
+Settings > Audio > Whisper (better for Hindi/Marathi, detects the language). Home shows `ASR: whisper (detected: hi)`.
+
+## Step 4 (optional, recommended): on-phone LLM
+1. Install Termux from GitHub (not the Play Store): https://github.com/termux/termux-app/releases (arm64-v8a APK): `adb install -r <apk>`.
+2. In Termux (type, or Claude drives it via `adb shell input text`):
 ```bash
 pkg update -y && pkg upgrade -y
 pkg install -y ollama
 echo 'pgrep -x ollama >/dev/null || (OLLAMA_HOST=127.0.0.1:11434 OLLAMA_KEEP_ALIVE=24h nohup ollama serve >/dev/null 2>&1 &)' >> ~/.bashrc
-source ~/.bashrc && sleep 4
-ollama pull gemma3:1b
+source ~/.bashrc && sleep 4 && ollama pull gemma3:1b
 ```
-3. Phone settings: battery > Termux > Unrestricted. Open Termux once after every reboot (it starts the server via `.bashrc`).
-4. Kavach > Settings: language model should be `gemma3:1b` (default). Debug > Ping model: expect a reply in under about 8 s.
-Measured on a OnePlus 7 Pro: about 3.6 s per scoring call, 16 tokens/s. If it is slower than 8 s on your phone, leave it OFF; the keyword analyst still works.
+3. Battery > Termux > Unrestricted. Open Termux once after every reboot. Kavach finds Ollama at 127.0.0.1:11434 and picks the installed model automatically.
+Measured on OnePlus 7 Pro: about 3.6 s per scoring call. If it is slower than 8 s on your phone, skip it: the keyword analyst still works.
 
-## Step 5: tests (tick each and report)
+## Step 5: make the test audio (no files needed)
+```bash
+pip install edge-tts
+python -m edge_tts --voice en-IN-PrabhatNeural --text "I am Inspector Sharma from Cyber Crime CBI. Your Aadhaar is linked to a money laundering case. You are under digital arrest. Do not tell anyone, not even your family. Transfer fifty thousand rupees to sharma dot verify at okicici immediately or you will be arrested." --write-media scam_en.mp3
+python -m edge_tts --voice hi-IN-MadhurNeural --text "Main CBI officer Sharma bol raha hoon. Aapke Aadhaar se money laundering hui hai, aap digital arrest mein hain. Kisi ko mat batana. Abhi pachaas hazaar rupaye transfer karo, warna arrest ho jaoge." --write-media scam_hi.mp3
+```
+Play them from a second phone or laptop speaker next to the test phone. (A friend reading the script in a normal voice is the other half of the test.)
+
+## Step 6: tests (tick each, report the result)
 | # | Do | Expect |
 |---|---|---|
-| 1 | Home > Simulate > `scam-digital-arrest-english-demo` @4x | pause screen, reasons, timer, Call 1930 button; timer ends and "continue" unlocks |
-| 2 | Home > Audio test (normal call on speaker, then WhatsApp) | table of SILENT/SIGNAL per source; set the best source in Settings |
+| 1 | Home > Simulate > `scam-digital-arrest-english-demo` @4x | pause screen, reasons, timer, Call 1930 button; after the timer "continue" unlocks and dismisses |
+| 2 | Home > Audio test (normal call on speaker, then WhatsApp call) | SILENT/SIGNAL table; set the best source in Settings |
 | 3 | A friend calls from an unsaved number | Debug log `CallStarted <number>`; mic level moves |
-| 4 | Friend reads the script below (normal voice, then play `audio/el_en.wav` / `el_hinglish.wav` from another phone) | L above 60, nudge banner; Home shows detected language |
-| 5 | During the call open GPay to a TEST contact, type the UPI id the caller said, amount 50000. STOP BEFORE THE PIN. NEVER PAY. | full pause BEFORE the PIN screen. If amount/payee are not read: Debug > Last accessibility screen > Copy dump |
-| 6 | Saved contact call + pay Rs 200 | nothing appears |
-| 7 | Tier 3 with a guardian number | guardian SMS arrives, reply `HOLD` extends the timer |
-| 8 | Airplane mode ON, repeat 4 | still works (proves no cloud dependency) |
+| 4 | Friend reads the caller script (normal voice, then play the AI-voice audio) | L above 60, nudge banner; Home shows detected language |
+| 5 | During the call open GPay/PhonePe to a TEST contact, type the UPI id the caller said, amount 50000. **STOP BEFORE THE PIN. NEVER PAY.** | full pause BEFORE the PIN screen. If amount/payee are not read: Debug > Last accessibility screen > Copy dump |
+| 6 | Saved-contact call, pay Rs 200 | nothing appears |
+| 7 | Tier 3 with a guardian number set | guardian SMS arrives; reply `HOLD` extends the timer |
+| 8 | Airplane mode ON, repeat 4 | still works (no cloud dependency) |
+| 9 | Send the phone a scam-style SMS/WhatsApp ("Your KYC expires today, click link, pay Rs 10") | a scam-message warning that explains why (feature being finished: report exactly what you see, including if nothing appears) |
+| 10 | Instagram/WhatsApp call from another phone (speaker on), caller script | `CallStarted`, transcript, nudge. If the call is not detected: Debug > Last accessibility screen > Copy dump |
 
 Caller script (read slowly): "I am Inspector Sharma from Cyber Crime CBI. Your Aadhaar is linked to a money laundering case. You are under digital arrest. Do not tell anyone, not even your family. Transfer fifty thousand rupees to sharma dot verify at okicici immediately or you will be arrested."
 
+## Time budget
+About 1 to 1.5 h with Claude Code driving: 20 min build + models + permissions, 15 min Termux/Ollama, 30 to 40 min tests. Skip Step 4 if short on time.
+
 ## Troubleshooting
-- `adb shell pm grant` fails: enable "Disable permission monitoring" (OnePlus) or grant manually in App info > Permissions.
-- No transcript lines in Debug: mic returns silence during calls on many phones. Use Day-0 Audio test; fallback is the laptop companion (`companion/listener.py`) or Debug > Send transcript.
-- `Ollama HTTP 404` in the log: the model name does not match; `ollama list` in Termux, then set the model in Settings.
-- Pause screen stuck: fixed (timer runs after Simulate ends); force-stop Kavach if you ever see it.
+- `adb shell pm grant` fails: enable "Disable permission monitoring" (OnePlus) or grant in App info > Permissions.
+- No transcript in Debug during a real call: many phones give the mic silence during calls. Run the Day-0 Audio test; fallbacks are speaker mode, the laptop companion (`companion/listener.py`), or Debug > Send transcript.
+- `Ollama HTTP 404`: fixed (the app now uses whichever model is installed). `ollama list` in Termux to check.
 - Never complete a real payment during tests.
 
-## Time budget
-About 1 to 1.5 h with Claude Code driving: 15 min install + models + permissions, 15 min Termux/Ollama (0.8 GB download), 30-40 min tests.
-Skip Step 4 (Termux/Gemma) if short on time: the keyword analyst + on-device speech still work.
-
-## Instagram / WhatsApp call test (no SIM needed for the caller)
-Instagram app on the test phone, logged in. From another phone call that account via Instagram, put the test phone on speaker, read the caller script.
-Expect: Debug log `CallStarted`, transcript, nudge. (Call-screen detection is a text heuristic tuned on WhatsApp; if Instagram is not detected,
-send Om Debug > Last accessibility screen > Copy dump.)
-
 ## Report back to Om
-Phone model + Android version, test 2 table, Debug > Copy log for tests 3-5 and 8, and any screen that looked wrong.
+Phone model + Android version, test 2 table, Debug > Copy log for tests 3, 4, 5, 8, 9, 10, and any screen that looked wrong.
