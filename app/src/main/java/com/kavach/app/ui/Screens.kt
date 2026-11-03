@@ -149,8 +149,13 @@ object SimPlayer {
     @Volatile private var job: Job? = null
     val status = kotlinx.coroutines.flow.MutableStateFlow("idle")
 
+    /** True only while a scenario is actually being played. The widget follows the sim engine only then. */
+    @Volatile var playing: Boolean = false
+        private set
+
     fun stop(c: com.kavach.app.Container) {
         job?.cancel(); job = null
+        playing = false
         c.sim?.stop(); c.sim = null
         android.os.Handler(android.os.Looper.getMainLooper()).post { c.overlay.dismiss() }
         status.value = "stopped"
@@ -162,6 +167,7 @@ object SimPlayer {
         val start = ScenarioLoader.startEpochMs(s)
         val simNow = java.util.concurrent.atomic.AtomicLong(start)
         val engine = c.newSimEngine { simNow.get() }
+        playing = true
         val events = s.events.sortedBy { it.t }
         val endT = (events.lastOrNull()?.t ?: 0) + 30
         job = CoroutineScope(Dispatchers.Default + SupervisorJob()).launch {
@@ -178,6 +184,7 @@ object SimPlayer {
                 while (idx < events.size && events[idx].t <= t) { engine.emit(ScenarioLoader.toEvent(s, events[idx])); idx++ }
                 status.value = "${s.id}  t=${t}s / ${endT}s"
             }
+            playing = false
             status.value = "finished ${s.id}"
             // Keep the virtual clock running in real time: an open pause screen counts down off this clock, so freezing it
             // would leave the user unable to ever continue (found on the OnePlus). Cancelled by stop().

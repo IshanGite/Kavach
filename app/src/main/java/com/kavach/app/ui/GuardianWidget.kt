@@ -28,11 +28,13 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.composed
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.input.pointer.pointerInput
-import androidx.compose.ui.input.pointer.positionChange
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.SpanStyle
@@ -97,7 +99,7 @@ private fun Bubble(
     Box(
         Modifier
             .fillMaxSize()
-            .semantics { contentDescription = "Kavach, ${view.tierLabel}" }
+            .semantics { contentDescription = "Kavach, ${view.tierLabel}" + if (view.paymentBadge) ", payment app open" else "" }
             .dragAndTap(onTap, onDrag, onDragEnd),
         contentAlignment = Alignment.Center,
     ) {
@@ -110,6 +112,19 @@ private fun Bubble(
             contentAlignment = Alignment.Center,
         ) {
             ShieldGlyph(Color.White, Modifier.size(34.dp))
+        }
+        if (view.paymentBadge) {
+            Box(
+                Modifier
+                    .align(Alignment.BottomEnd)
+                    .size(22.dp)
+                    .clip(CircleShape)
+                    .background(WidgetNavy)
+                    .border(1.dp, Color.White, CircleShape),
+                contentAlignment = Alignment.Center,
+            ) {
+                Text("\u20B9", color = Color.White, fontSize = 12.sp, fontWeight = FontWeight.Bold)
+            }
         }
         if (view.alertCount > 0) {
             Box(
@@ -384,25 +399,39 @@ private fun Modifier.dragAndTap(
     onTap: () -> Unit,
     onDrag: (Float, Float) -> Unit,
     onDragEnd: () -> Unit,
-): Modifier = pointerInput(Unit) {
-    awaitEachGesture {
-        val down = awaitFirstDown(requireUnconsumed = false)
-        val slop = viewConfiguration.touchSlop
-        var pastSlop = false
-        var total = 0f
-        while (true) {
-            val event = awaitPointerEvent()
-            val change = event.changes.firstOrNull { it.id == down.id } ?: break
-            if (!change.pressed) {
-                if (pastSlop) onDragEnd() else onTap()
-                break
-            }
-            val delta = change.positionChange()
-            total += delta.getDistance()
-            if (!pastSlop && total > slop) pastSlop = true
-            if (pastSlop && (delta.x != 0f || delta.y != 0f)) {
-                change.consume()
-                onDrag(delta.x, delta.y)
+): Modifier = composed {
+    val host = LocalView.current
+    pointerInput(Unit) {
+        // The window moves under the finger, so window-local deltas jitter. Track the pointer in screen coordinates.
+        val loc = IntArray(2)
+        fun screenPos(local: Offset): Offset {
+            host.getLocationOnScreen(loc)
+            return Offset(loc[0] + local.x, loc[1] + local.y)
+        }
+        awaitEachGesture {
+            val down = awaitFirstDown(requireUnconsumed = false)
+            val slop = viewConfiguration.touchSlop
+            val start = screenPos(down.position)
+            var last = start
+            var pastSlop = false
+            while (true) {
+                val event = awaitPointerEvent()
+                val change = event.changes.firstOrNull { it.id == down.id } ?: break
+                if (!change.pressed) {
+                    if (pastSlop) onDragEnd() else onTap()
+                    break
+                }
+                val now = screenPos(change.position)
+                if (!pastSlop && (now - start).getDistance() > slop) pastSlop = true
+                if (pastSlop) {
+                    val dx = now.x - last.x
+                    val dy = now.y - last.y
+                    if (dx != 0f || dy != 0f) {
+                        change.consume()
+                        onDrag(dx, dy)
+                    }
+                }
+                last = now
             }
         }
     }

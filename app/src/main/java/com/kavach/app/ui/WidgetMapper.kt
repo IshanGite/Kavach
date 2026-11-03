@@ -42,6 +42,8 @@ data class WidgetUiLatch(
     val dismissedAlertIds: Set<String> = emptySet(),
     val historyOpen: Boolean = false,
     val historyEpoch: String? = null,
+    /** User tapped the bubble while a payment app is in front: show the card even though the tier is below 2. */
+    val paymentPeek: Boolean = false,
 )
 
 data class WidgetView(
@@ -78,6 +80,8 @@ data class WidgetView(
     val recentLabel: String,
     val alertCount: Int,
     val scoreLine: String = "",
+    /** A payment app is in front and the tier is below 2: calm bubble with a badge instead of the card. */
+    val paymentBadge: Boolean = false,
 ) {
     /** There is no state in which the overlay eats taps that land outside the bubble or the card. */
     val consumesTouchesOutside: Boolean get() = false
@@ -168,6 +172,7 @@ object WidgetMapper {
         lang: Lang = Lang.EN,
         familyName: String? = null,
         fullScreenPauseShowing: Boolean = false,
+        paymentAppForeground: Boolean = false,
     ): WidgetView {
         val sit = situation(surface, latch)
         val band = WidgetTierBand.fromLevel(surface.tierLevel)
@@ -182,6 +187,8 @@ object WidgetMapper {
             DisplayedAlert(n.id, n.source, WidgetCopy.plainWhy(n, lang), n.excerpt)
         }
         val family = familyName?.trim()?.takeIf { it.isNotEmpty() }
+
+        val paymentQuiet = paymentQuiet(paymentAppForeground, surface.tierLevel, latch)
 
         fun view(card: WidgetCard): WidgetView {
             val live = card == WidgetCard.LIVE
@@ -221,11 +228,15 @@ object WidgetMapper {
                 recentLabel = WidgetCopy.recent(lang),
                 alertCount = surface.scamNotices.size,
                 scoreLine = RiskLabels.compact(lang, surface.tierLevel, surface.contextScore, surface.languageScore, surface.risk),
+                paymentBadge = card == WidgetCard.BUBBLE && paymentQuiet,
             )
         }
 
         // The existing full-screen pause already owns a tier 2/3 payment. The bubble stays out of its way.
         if (fullScreenPauseShowing && surface.tierLevel >= 2) return view(WidgetCard.BUBBLE)
+
+        // Below tier 2 inside a payment app the card would cover the payment screen: bubble plus badge, tap to expand.
+        if (paymentQuiet) return view(WidgetCard.BUBBLE)
 
         val epochNow = epoch(sit)
         if (latch.historyOpen && latch.historyEpoch == epochNow && surface.scamNotices.isNotEmpty()) {
@@ -242,8 +253,13 @@ object WidgetMapper {
         return latch.copy(
             quiet = Quiet(sit.callKey, sit.alertId, sit.tier, hardDismiss = false),
             historyOpen = false,
+            paymentPeek = false,
         )
     }
+
+    /** True when the payment-app rule keeps the widget down to a badged bubble. */
+    fun paymentQuiet(paymentAppForeground: Boolean, tierLevel: Int, latch: WidgetUiLatch): Boolean =
+        paymentAppForeground && tierLevel < 2 && !latch.paymentPeek
 
     fun dismiss(latch: WidgetUiLatch, surface: WidgetSurface): WidgetUiLatch {
         val card = project(surface, latch).card
@@ -262,9 +278,13 @@ object WidgetMapper {
         latch: WidgetUiLatch,
         surface: WidgetSurface,
         fullScreenPauseShowing: Boolean = false,
+        paymentAppForeground: Boolean = false,
     ): WidgetUiLatch {
         if (fullScreenPauseShowing) return latch
-        if (project(surface, latch).card != WidgetCard.BUBBLE) return latch
+        if (paymentQuiet(paymentAppForeground, surface.tierLevel, latch)) {
+            return latch.copy(paymentPeek = true, quiet = null, historyOpen = false)
+        }
+        if (project(surface, latch, paymentAppForeground = paymentAppForeground).card != WidgetCard.BUBBLE) return latch
         val sit = situation(surface, latch)
         val quiet = latch.quiet
         val covered = quiet != null && quietCovers(quiet, sit)
@@ -293,14 +313,13 @@ object WidgetMapper {
 /** Case-insensitive phrase marks. Quotes shorter than 3 characters are ignored so a stray letter cannot paint the line. */
 fun highlightSpans(text: String, quotes: List<String>): List<HighlightSpan> {
     if (text.isEmpty() || quotes.isEmpty()) return emptyList()
-    val lower = text.lowercase()
     val found = mutableListOf<HighlightSpan>()
     for (quote in quotes) {
-        val needle = quote.trim().lowercase()
+        val needle = quote.trim()
         if (needle.length < 3) continue
         var from = 0
-        while (from < lower.length) {
-            val at = lower.indexOf(needle, from)
+        while (from < text.length) {
+            val at = text.indexOf(needle, from, ignoreCase = true)
             if (at < 0) break
             val end = (at + needle.length).coerceAtMost(text.length)
             if (end > at) found += HighlightSpan(at, end)

@@ -294,6 +294,44 @@ class WidgetMapperTest {
         assertFalse(WidgetMapper.shouldShow(protectionOn = false, widgetEnabled = false))
     }
 
+    @Test
+    fun `payment app in front below tier 2 shows a badged bubble and tap expands`() {
+        val surface = unknownCall(tier = 1)
+        val quiet = WidgetMapper.project(surface, paymentAppForeground = true)
+        assertEquals(WidgetCard.BUBBLE, quiet.card)
+        assertTrue(quiet.paymentBadge)
+        val tapped = WidgetMapper.bubbleTap(WidgetUiLatch(), surface, paymentAppForeground = true)
+        val open = WidgetMapper.project(surface, tapped, paymentAppForeground = true)
+        assertEquals(WidgetCard.LIVE, open.card)
+        assertFalse(open.paymentBadge)
+        // Tier 2+ is never hidden by this rule; outside a payment app nothing changes.
+        assertEquals(WidgetCard.LIVE, WidgetMapper.project(unknownCall(tier = 2), paymentAppForeground = true).card)
+        assertEquals(WidgetCard.LIVE, WidgetMapper.project(surface).card)
+        assertFalse(WidgetMapper.project(surface).paymentBadge)
+    }
+
+    @Test
+    fun `widget follows the sim engine only while a simulation is playing`() {
+        assertEquals("sim", selectWidgetSource(true, "sim", "live"))
+        assertEquals("live", selectWidgetSource(false, "sim", "live"))
+        assertEquals("live", selectWidgetSource(true, null, "live"))
+    }
+
+    @Test
+    fun `failed window add backs off before retrying`() {
+        assertFalse(widgetRetryAllowed(1_000, 1_000 + WIDGET_RETRY_BACKOFF_MS))
+        assertTrue(widgetRetryAllowed(1_000 + WIDGET_RETRY_BACKOFF_MS, 1_000 + WIDGET_RETRY_BACKOFF_MS))
+    }
+
+    @Test
+    fun `highlight spans use original indices for text whose case mapping changes length`() {
+        // U+0130 lowercases to two chars, which used to shift every later index.
+        val text = "\u0130 you must pay NOW"
+        val spans = highlightSpans(text, listOf("pay now"))
+        assertEquals(1, spans.size)
+        assertEquals("pay NOW", text.substring(spans[0].start, spans[0].endExclusive))
+    }
+
     private fun unknownCall(
         tier: Int = 0,
         number: String = "+91 99887 76655",
