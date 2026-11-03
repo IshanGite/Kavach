@@ -30,6 +30,13 @@ captures/
 # Vosk models are pushed to the phone with adb. Never commit them.
 vosk-model-*/
 
+# sherpa-onnx Whisper weights are pushed to the phone (docs/ANDROID_SETUP.md). Never commit them.
+# The v2.0.1 AAR is 47 MB, under the 50 MB cutoff, so app/libs/sherpa-onnx-2.0.1.aar is not ignored.
+sherpa-onnx-whisper-*/
+*.onnx
+*.tar.bz2
+app/libs/*.partial
+
 # Python companion
 __pycache__/
 .venv/

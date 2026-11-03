@@ -28,6 +28,7 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import com.kavach.app.KavachService
+import com.kavach.app.audio.SherpaWhisperAsr
 import com.kavach.app.container
 import com.kavach.app.sense.CallScreeningRole
 
@@ -123,6 +124,7 @@ fun HomeScreen(go: (String) -> Unit) {
     val c = ctx.container()
     val settings by c.settings.state.collectAsState()
     val asr by c.asrState.collectAsState()
+    val whisperStatus by c.whisperStatus.collectAsState()
     val d by c.live.latest.collectAsState()
     val llm by c.live.llmStatus.collectAsState()
     val level by c.audioLevelDb.collectAsState()
@@ -155,7 +157,8 @@ fun HomeScreen(go: (String) -> Unit) {
             LinearProgressIndicator(progress = { (r?.risk ?: 0) / 100f }, modifier = Modifier.fillMaxWidth().height(10.dp),
                 color = when ((d?.tier?.level ?: 0)) { 0 -> Color(0xFF1B7F3B); 1 -> Color(0xFFB45F06); else -> Color(0xFFB3261E) })
             Text("Language model: $llm", fontSize = 13.sp)
-            Text("ASR: ${asr.name}", fontSize = 13.sp)
+            val asrLine = if (asr is SherpaWhisperAsr) whisperStatus.ifBlank { asr.name } else asr.name
+            Text("ASR: $asrLine", fontSize = 13.sp)
             Text("Mic level: ${"%.0f".format(level)} dBFS", fontSize = 13.sp, fontFamily = FontFamily.Monospace)
         }
 

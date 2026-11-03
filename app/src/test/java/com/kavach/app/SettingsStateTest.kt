@@ -29,5 +29,6 @@ class SettingsStateTest {
         assertFalse(s.cloudEnabled); assertFalse(s.protectionEnabled); assertFalse(s.companionEnabled)
         assertTrue(s.ollamaUrl.startsWith("http://127.0.0.1"))
         assertEquals(8_000, s.llmTimeoutMs)
+        assertEquals("vosk", s.asrEngine)
     }
 }

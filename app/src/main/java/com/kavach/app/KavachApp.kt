@@ -13,7 +13,9 @@ import com.kavach.app.audio.AsrEngine
 import com.kavach.app.audio.AudioCaptureController
 import com.kavach.app.audio.CompanionServer
 import com.kavach.app.audio.NoopAsr
+import com.kavach.app.audio.SherpaWhisperAsr
 import com.kavach.app.audio.VoskAsr
+import com.kavach.app.audio.normalizeAsrEngine
 import com.kavach.app.audio.preferModelId
 import com.kavach.app.engine.*
 import com.kavach.app.sense.VoipCallDetector
@@ -52,13 +54,25 @@ class Container(val app: Application) {
     val audioLevelDb = MutableStateFlow(-90f)
 
     /**
-     * On-device Vosk once a model has loaded, otherwise [NoopAsr]. The load runs off the main thread;
-     * Home collects [asrState] so the status line updates when it finishes.
+     * On-device ASR. Vosk is the default. Whisper loads when Settings asks for it and the model files
+     * are present; otherwise this falls back to Vosk, then [NoopAsr]. The load runs off the main thread.
+     * Home collects [asrState]. Whisper's detected language is published on [whisperStatus] because the
+     * engine object itself does not change when a window reports a language.
      */
-    val asrState = MutableStateFlow<AsrEngine>(VoskAsr.LOADING)
+    val asrState = MutableStateFlow<AsrEngine>(
+        if (normalizeAsrEngine(settings.state.value.asrEngine) == "whisper") SherpaWhisperAsr.LOADING else VoskAsr.LOADING,
+    )
+    val whisperStatus = MutableStateFlow("")
     var asr: AsrEngine
         get() = asrState.value
-        set(value) { asrState.value = value }
+        set(value) {
+            asrState.value = value
+            if (value is SherpaWhisperAsr) whisperStatus.value = value.name
+        }
+
+    private val asrLoadLock = Any()
+    private var whisperEngine: SherpaWhisperAsr? = null
+    private var voskEngine: AsrEngine? = null
     val audio = AudioCaptureController(app, live, settings, audioLevelDb) { asr }
     val companion = CompanionServer(settings, live)
 
@@ -101,18 +115,58 @@ class Container(val app: Application) {
     /** The engine whose session the report screen should describe: whichever saw the most recent activity. */
     fun reportEngine(): KavachEngine = sim?.takeIf { it.lastActivityMs > live.lastActivityMs } ?: live
 
-    init {
-        // Model() reads tens of megabytes and must not run on the main thread. Directory checks are in the same
-        // thread so a missing model becomes NoopAsr without a flash of a successful name.
-        thread(name = "kavach-vosk-load", isDaemon = true) {
-            val (engine, detail) = try {
-                VoskAsr.tryLoad(app) { preferModelId(settings.state.value.language) }
-            } catch (t: Throwable) {
-                null to "ASR load failed: ${t.javaClass.simpleName}"
+    /**
+     * Reload the engine selected in Settings. Safe to call more than once. Model reads stay off the main
+     * thread. A Whisper engine that is no longer selected is released; Vosk stays cached.
+     */
+    fun reloadAsr() {
+        thread(name = "kavach-asr-load", isDaemon = true) {
+            synchronized(asrLoadLock) {
+                val (engine, detail) = try {
+                    selectAsr()
+                } catch (t: Throwable) {
+                    NoopAsr to "ASR load failed: ${t.javaClass.simpleName}"
+                }
+                val previous = asr
+                asr = engine
+                if (previous is SherpaWhisperAsr && previous !== engine) {
+                    if (whisperEngine === previous) whisperEngine = null
+                    previous.release()
+                }
+                live.note(detail)
             }
-            asr = engine ?: NoopAsr
-            live.note(detail)
         }
+    }
+
+    private fun selectAsr(): Pair<AsrEngine, String> {
+        if (normalizeAsrEngine(settings.state.value.asrEngine) == "whisper") {
+            whisperEngine?.let { return it to "ASR ready: ${it.name}" }
+            val (engine, detail) = SherpaWhisperAsr.tryLoad(
+                app,
+                note = { live.note(it) },
+                onLabel = { whisperStatus.value = it },
+            )
+            if (engine != null) {
+                whisperEngine = engine
+                return engine to detail
+            }
+            val (vosk, voskNote) = loadVosk()
+            return (vosk ?: NoopAsr) to "$detail; fell back to $voskNote"
+        }
+        val (vosk, voskNote) = loadVosk()
+        return (vosk ?: NoopAsr) to voskNote
+    }
+
+    private fun loadVosk(): Pair<AsrEngine?, String> {
+        voskEngine?.let { return it to "ASR ready: ${it.name}" }
+        val (engine, detail) = VoskAsr.tryLoad(app) { preferModelId(settings.state.value.language) }
+        if (engine != null) voskEngine = engine
+        return engine to detail
+    }
+
+    init {
+        // Model reads are tens of megabytes and must not run on the main thread.
+        reloadAsr()
     }
 }
 

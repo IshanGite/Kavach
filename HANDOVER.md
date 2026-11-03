@@ -14,11 +14,11 @@ Phone verification steps: `docs/PHONE_TEST_PLAN.md`.
 
 | | |
 |---|---|
-| Last updated | 2026-11-03 (night), personal-mobile institution rule |
+| Last updated | 2026-11-03 (night), sherpa-onnx Whisper ASR |
 | `main` is | green: 171 core tests; offline evals 31/31 scams paused and 0/25 normal paused (3 nudges); **live gemma3:4b was 27/27 and 0/23 and was not re-run**; security gates pass; APK builds; lint clean |
 | Held-out honesty | 20 unseen scenarios run BEFORE tuning: rule layer alone caught 6/12 scams. Those 20 are now used up for tuning; **we still need a fresh held-out set from someone outside the team** |
 | Model latency (laptop, gemma3:4b, terse prompt) | median 5.4 s, p90 6.9 s. The phone will be slower; on the phone expect timeouts and rely on the keyword floor. Measure with Pre-flight |
-| App has been run on a real phone? | **NO. Nothing in `app/` has ever executed on a device.** It compiles, lints and builds an APK. Treat every on-device behaviour as unverified until ticked in `docs/PHONE_TEST_PLAN.md`. |
+| App has been run on a real phone? | **Partly.** OnePlus 7 Pro (Android 12): Simulate, Vosk, and Whisper-base (this session, speaker playback into the mic, not an in-call capture). In-call mic (T2), GPay amount/payee, guardian SMS and Hindi TTS are still unverified. |
 | Biggest unknown | Whether the demo phone gives us microphone audio during a call (Day-0 test, T2) |
 
 ## Status by component
@@ -46,7 +46,7 @@ Legend: ✅ built and tested on the laptop · 🟡 built, compiles, **untested o
 | Audio capture + Day-0 audio test | 🟡 | `audio/Audio.kt`, `ui/Screens.kt` | Test screen records 20 s per source and prints a SILENT/SIGNAL verdict |
 | Companion listener (option C): phone side + laptop script | 🟡 / ✅ | `audio/CompanionServer.kt`, `companion/listener.py` | Script tested against a mock; phone side untested |
 | Guardian SMS, TTS (EN/HI), notifications, PDF report | 🟡 | `engine/Platform.kt`, `util/Files.kt` | |
-| **Speech-to-text (Vosk)** | 🟡 | `audio/VoskAsr.kt`, `Audio.kt` | On-device when `vosk-model-small-en-in-0.4` / `vosk-model-small-hi-0.22` are in external files. Otherwise `NoopAsr` and Home shows `ASR: none (push Vosk model)`. Not run on a device. |
+| **Speech-to-text** | 🟡 | `audio/VoskAsr.kt`, `audio/SherpaWhisperAsr.kt` | Vosk is the default. Settings > Audio > Whisper uses sherpa-onnx 2.0.1, int8 base, 4 threads, `language=""`. Missing Whisper files fall back to Vosk, then Noop. On the OnePlus 7 Pro, base decoded 5.0 s windows in about 0.4–1.3 s (typical ~1.1 s) and Home showed `ASR: whisper (detected: hi)`. Tiny was on disk and was not needed. |
 | Ollama on the phone (Termux) | ⬜ | `docs/ANDROID_SETUP.md` | Not set up. Laptop Ollama over `adb reverse` works for dev |
 | Synthetic-voice detector (ONNX) | ⬜ | | Stretch. Weight is 0 when absent; spec says weak signal |
 | Onboarding polish, safe-word capture | ⬜ | | Only a flag exists for the safe word |
@@ -55,11 +55,12 @@ Legend: ✅ built and tested on the laptop · 🟡 built, compiles, **untested o
 ## What is verified vs not
 
 **Verified (laptop):** all `core` behaviour, 56 scenarios (scorecard 31/31 scams paused, 0/25 normal paused), fuzzed invariants, repo security gates (secrets, audio files, cleartext HTTP, logging, manifest
-permissions/exported/backup), APK assembles with Vosk + JNA native libs, Android lint passes, companion script talks to a mock server.
-Vosk model-folder resolution and result JSON parsing have JVM unit tests. Loading a model and transcribing audio have not run on a phone.
+permissions/exported/backup), APK assembles with Vosk + sherpa-onnx native libs, Android lint passes, companion script talks to a mock server.
+Vosk model-folder resolution and Whisper file layout have JVM unit tests.
 
-**NOT verified:** that any Android API behaves as assumed on a real device: overlay drawing over a UPI app, accessibility node text of GPay/PhonePe,
-PHONE_STATE number delivery, mic during call, Vosk model load and transcription, TTS Hindi voice, SMS sending, foreground-service survival, Android 14 microphone-FGS rules.
+**Verified on the OnePlus 7 Pro (speaker into the mic, injected unknown call, not an in-call capture):** Whisper-base int8, 4 threads, decoded 5.0 s windows in 381–1327 ms. Home showed `ASR: whisper (detected: hi)`. Tiny was not needed.
+
+**NOT verified:** overlay drawing over a UPI app, accessibility node text of GPay/PhonePe, PHONE_STATE number delivery, mic during a real call (T2), TTS Hindi voice, SMS sending, foreground-service survival, Android 14 microphone-FGS rules.
 
 ## Next actions
 
@@ -99,6 +100,7 @@ PHONE_STATE number delivery, mic during call, Vosk model load and transcription,
 |---|---|
 | Mic returns silence during calls (Android 10+) | Day-0 test; option C companion; option D still reaches tier 2 (`scam-option-d-no-audio`) |
 | Vosk runs one model per 5 s window (Settings language). The other model is used only when the first returns no words, so a wrong-language hallucination is not retried. Two full decodes per window were not wired: small-model confidence is too flat to choose, and it would be about 2x CPU. Windows overlap by 1 s, so the session transcript repeats words. | Match Settings language to the demo script. A later design can feed the 100 ms mic reads to a long-lived recogniser instead of re-decoding the 5 s ring. |
+| Whisper-base on this OnePlus 7 Pro was faster than the 5 s window, so the tiny fallback did not run. Hinglish still comes out mixed (good English lines, repeated Devanagari, one Urdu token). Auto-detect is unrestricted (`language=""`). | Keep base. If a slower phone logs `dropped to tiny`, that is intended. A later build can pass `language_candidates=hi,mr,en` so auto-detect cannot wander. |
 | Accessibility can't read amount/payee in a UPI app (FLAG_SECURE, custom views) | "Payment app opened during call" alone is enough for a nudge/pause; pick the app that exposes views best for the demo; tune `ScreenParser` |
 | Sideloaded APK: accessibility/notification toggles greyed out (Android 13+) | App info > ⋮ > Allow restricted settings |
 | Android 14 refuses the microphone foreground type if the service starts in the background | Service is started from the UI toggle; falls back to running without the mic type (logged) |
@@ -124,6 +126,8 @@ PHONE_STATE number delivery, mic during call, Vosk model load and transcription,
 | `app/ui` | whoever has the phone in hand; keep PRs small |
 
 ## Session log (newest first, append only)
+
+- **2026-11-03 night (sherpa-onnx Whisper):** Second `AsrEngine` beside Vosk. Settings > Audio chooses Vosk (default) or Whisper. Whisper is sherpa-onnx 2.0.1 (AAR in `app/libs`, 47 MB, not gitignored), int8 base, 4 threads, `language=""`. Models live in `getExternalFilesDir(null)/sherpa-whisper/` and are not in git (`scripts/fetch-sherpa-onnx.sh`). Missing files fall back to Vosk, then Noop. `:core:test` 171 passed, scorecard 31/31 scams paused and 0/25 normal paused. `:app:testDebugUnitTest` passed (22 tests, including Whisper path tests). `:app:assembleDebug` and `:app:lintDebug` passed (lint: 0 errors, 38 warnings). On the OnePlus 7 Pro, Home showed `ASR: whisper (detected: hi)` after `el_hinglish.wav` was played from the laptop speaker into an injected unknown-call capture. Debug log: `asr window 5.0s decoded in` 381–1327 ms (typical about 1.1 s). Tiny was pushed and not used. One clear line was `I am CBI officer Sharma, I am speaking with you.` and L reached 65 (tier 1). Not an in-call mic test. Settings on that phone was left on Whisper, protection ON, session POST_INCIDENT.
 
 - **2026-11-03 night (personal-mobile institution rule):** Unknown caller + bank/police/CBI/other-authority finding + a normal 10-digit mobile (not 140/160) is +10 (`INSTITUTION_FROM_PERSONAL_MOBILE`). Family and courier labels and saved contacts do not score. `:core:test` passed (171 tests). Scorecard 31/31 scams paused, 0/25 normal paused; the new 160-series twin is a nudge (tier 1), the personal-mobile twin pauses. TRAI series reading is unverified against the directive (decision 33). Live model suite not re-run. Nothing ran on a device.
 

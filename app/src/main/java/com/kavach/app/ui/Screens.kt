@@ -83,7 +83,7 @@ fun SettingsScreen() {
                 FilterChip(selected = s.language == "EN", onClick = { up { it.copy(language = "EN") } }, label = { Text("English") })
                 FilterChip(selected = s.language == "HI", onClick = { up { it.copy(language = "HI") } }, label = { Text("हिन्दी") })
             }
-            Text("Also selects the on-device Vosk model: English uses en-in, Hindi uses hi.", fontSize = 12.sp)
+            Text("For Vosk, English uses the en-in model and Hindi uses hi. Whisper detects the language itself.", fontSize = 12.sp)
             ToggleRow("Family safe word is set", s.safeWordSet, { v -> up { it.copy(safeWordSet = v) } }, "Only a flag. The word itself is never stored on the phone.")
             ToggleRow("Speak the tier-1 nudge aloud", s.speakNudges, { v -> up { it.copy(speakNudges = v) } }, "Tier 2/3 warnings are always spoken")
         }
@@ -100,6 +100,22 @@ fun SettingsScreen() {
         }
 
         Section("Audio") {
+            Text("On-device recogniser:", fontSize = 13.sp)
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                FilterChip(selected = s.asrEngine != "whisper", onClick = {
+                    if (s.asrEngine != "vosk") {
+                        up { it.copy(asrEngine = "vosk") }
+                        c.reloadAsr()
+                    }
+                }, label = { Text("Vosk") })
+                FilterChip(selected = s.asrEngine == "whisper", onClick = {
+                    if (s.asrEngine != "whisper") {
+                        up { it.copy(asrEngine = "whisper") }
+                        c.reloadAsr()
+                    }
+                }, label = { Text("Whisper") })
+            }
+            Text("Vosk is the default. Whisper (Hindi, Marathi, English) needs the sherpa-whisper folder. If those files are missing, Kavach stays on Vosk.", fontSize = 12.sp)
             Text("Source used during calls (set from the Day-0 test):", fontSize = 13.sp)
             Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                 listOf("VOICE_RECOGNITION", "MIC", "CAMCORDER").forEach { src ->

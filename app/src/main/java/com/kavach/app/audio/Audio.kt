@@ -17,14 +17,18 @@ import kotlin.math.max
 import kotlin.math.sqrt
 
 /**
- * Speech-to-text plug point. [VoskAsr] transcribes on the device when a model folder has been pushed
- * to external files; [NoopAsr] is option D (no audio) and still reaches the pause tier.
+ * Speech-to-text plug point. [VoskAsr] is the default. [SherpaWhisperAsr] is the optional multilingual
+ * Whisper engine. [NoopAsr] is option D (no audio) and still reaches the pause tier.
  * Implementations must be fast to reject silence and must never write audio to disk or send it off the device.
  */
 interface AsrEngine {
     val name: String
+    /** ISO 639-1 code from the last window, or blank when this engine does not detect a language. */
+    val detectedLanguage: String get() = ""
     /** 16 kHz mono PCM, about 5 s. Return the transcript or null if nothing intelligible. */
     suspend fun transcribe(pcm: ShortArray, sampleRateHz: Int): String?
+    /** Free native weights. Vosk stays loaded for the process; Whisper releases on switch. */
+    fun release() {}
 }
 
 /** No Vosk model on disk. Capture still runs, but nothing is transcribed. */
@@ -113,11 +117,18 @@ class AudioCaptureController(
                     busy = true
                     launch(Dispatchers.Default) {
                         try {
-                            val text = asr().transcribe(snapshot, SAMPLE_RATE)?.trim()
-                            if (!text.isNullOrEmpty()) engine.emit(TranscriptChunk(engine.now(), text, "auto", Speaker.CALLER))
+                            val active = asr()
+                            val text = active.transcribe(snapshot, SAMPLE_RATE)?.trim()
+                            if (!text.isNullOrEmpty()) {
+                                val lang = active.detectedLanguage.ifBlank { "auto" }
+                                engine.emit(TranscriptChunk(engine.now(), text, lang, Speaker.CALLER))
+                            }
                         } catch (e: CancellationException) { throw e } catch (e: Exception) {
                             engine.note("ASR error: ${e.javaClass.simpleName}")
-                        } finally { busy = false }
+                        } finally {
+                            snapshot.fill(0) // the 5 s copy does not outlive the window
+                            busy = false
+                        }
                     }
                 }
             }

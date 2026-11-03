@@ -53,6 +53,45 @@ Settings > Language picks which loaded model decodes each window (English → `e
 in memory and is used only when the preferred one returns no words. Audio is decoded in RAM only. It is never written to disk
 and never uploaded. No extra permission is required beyond the microphone the app already asks for.
 
+## On-device Whisper (sherpa-onnx, optional)
+
+Vosk stays the default. Settings > Audio > **Whisper** selects a second engine: sherpa-onnx 2.0.1 with a multilingual
+Whisper model (Hindi, Marathi, English). Language is auto-detected (`language=""`); Home shows `ASR: whisper (detected: mr)`.
+The runtime does not download anything. If the model files are missing, the app stays on Vosk, then on `NoopAsr`.
+
+sherpa-onnx is not on Maven. The Android AAR is Apache-2.0, about 47 MB (under the 50 MB cutoff, so it is not gitignored):
+
+```bash
+./scripts/fetch-sherpa-onnx.sh
+# writes app/libs/sherpa-onnx-2.0.1.aar
+# Gradle also fetches that URL when the file is absent, so a clean CI checkout still builds.
+```
+
+Weights are not in git. Fetch the int8 files (base, and tiny so a slow phone can drop down) and push them:
+
+```bash
+./scripts/fetch-sherpa-onnx.sh --models
+# extracts int8 encoder, decoder and tokens into build/sherpa-models/sherpa-whisper/
+```
+
+Install the app once so the external-files directory exists, then:
+
+```bash
+DEST=/sdcard/Android/data/com.kavach.app/files/sherpa-whisper
+adb shell mkdir -p "$DEST"
+adb push build/sherpa-models/sherpa-whisper/. "$DEST/"
+```
+
+That path is `Context.getExternalFilesDir(null)/sherpa-whisper/`. The loader also accepts the unpacked
+`sherpa-onnx-whisper-base` / `sherpa-onnx-whisper-tiny` folders (including one extra nested copy) and a generic
+`encoder` / `decoder` / `tokens` trio in `sherpa-whisper/`. int8 is preferred over fp32. Force-stop and reopen, then
+choose Whisper in Settings. The Debug log records each window as `asr window 5.0s decoded in X ms`. The engine uses
+4 threads. If a base window takes longer than the audio in it and tiny is on disk, later windows use tiny and the log
+says so. PCM stays in memory.
+
+Official packs: [sherpa-onnx-whisper-base.tar.bz2](https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/sherpa-onnx-whisper-base.tar.bz2)
+and [sherpa-onnx-whisper-tiny.tar.bz2](https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/sherpa-onnx-whisper-tiny.tar.bz2).
+
 ## Dev shortcuts
 
 ```bash

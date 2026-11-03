@@ -29,7 +29,7 @@ data class SettingsState(
     val cloudEnabled: Boolean = false,
     val cloudApiKey: String = "",
     val ollamaUrl: String = "http://127.0.0.1:11434",
-    val ollamaModel: String = "gemma3:4b",
+    val ollamaModel: String = "gemma3:1b",
     val llmTimeoutMs: Long = 8_000,
     /** One few-shot instead of three: faster on a phone CPU. */
     val compactPrompt: Boolean = true,
@@ -37,6 +37,8 @@ data class SettingsState(
     val protectionEnabled: Boolean = false,
     /** VOICE_RECOGNITION | MIC | CAMCORDER | UNPROCESSED. Set from the Day-0 audio test result. */
     val audioSource: String = "VOICE_RECOGNITION",
+    /** "vosk" (default) or "whisper". Missing Whisper files fall back to Vosk, then no ASR. */
+    val asrEngine: String = "vosk",
     val companionEnabled: Boolean = false,
     val companionToken: String = "",
 ) {
