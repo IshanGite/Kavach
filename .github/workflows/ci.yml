@@ -37,7 +37,7 @@ jobs:
 
       - name: Upload reports
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: kavach-core-reports
           path: |
@@ -61,7 +61,7 @@ jobs:
         run: ./gradlew :app:assembleDebug :app:lintDebug :app:testDebugUnitTest --console=plain
       - name: Upload lint report
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: kavach-android-lint
           path: app/build/reports/
