@@ -1,0 +1,36 @@
+{
+  "id": "heldout-normal-electrician-pays-qr",
+  "kind": "normal",
+  "description": "Electrician on the phone while the user pays him Rs 800 by QR (new payee, 4x usual).",
+  "events": [
+    {
+      "t": 0,
+      "type": "call_started",
+      "number": "+91 90111 77889",
+      "in_contacts": false
+    },
+    {
+      "t": 4,
+      "type": "transcript",
+      "text": "Sir kaam ho gaya hai, switch board change kar diya, 800 rupaye hue hain, QR se de dijiye.",
+      "speaker": "caller"
+    },
+    {
+      "t": 40,
+      "type": "payment",
+      "app": "PhonePe",
+      "stage": "opened"
+    },
+    {
+      "t": 48,
+      "type": "payment",
+      "app": "PhonePe",
+      "stage": "amount_entered",
+      "amount": 800,
+      "payee": "Mahesh Electrician"
+    }
+  ],
+  "expect": {
+    "max_tier": 1
+  }
+}

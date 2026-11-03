@@ -66,7 +66,18 @@ class KavachEngine(
         speakNudges = settings.state.value.speakNudges,
     )
     private val scamNumbers = ScamNumbers.loadBundled()
-    val runtime = KavachRuntime(orchestrator, HybridTranscriptAnalyst(llm, cfg), HybridMessageClassifier(llm), scope, clockFn, tickEveryMs)
+    val runtime = KavachRuntime(
+        orchestrator, HybridTranscriptAnalyst(llm, cfg) { settings.state.value.compactPrompt }, HybridMessageClassifier(llm), scope, clockFn, tickEveryMs,
+    )
+
+    /** Load the model into memory now so the first real analysis during a call is not a cold start. */
+    fun warmUpModel() {
+        scope.launch(Dispatchers.IO) {
+            val t0 = System.currentTimeMillis()
+            try { llm.analyze(WARMUP_REQUEST); note("Model warmed up in ${System.currentTimeMillis() - t0} ms") }
+            catch (e: Exception) { note("Model warm-up skipped: ${e.message}") }
+        }
+    }
 
     val latest = MutableStateFlow<Decision?>(null)
     val log = MutableStateFlow<List<LogEntry>>(emptyList())

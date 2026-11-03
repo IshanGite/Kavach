@@ -1,8 +1,7 @@
 {
   "id": "scam-investment-telegram-tasks",
   "kind": "scam",
-  "description": "Telegram 'part-time task' scam: repeated small deposits to new payees, no live call. Not yet modelled (needs a repeated-new-payee rule).",
-  "known_gap": "Investment/task scams without a live call: the engine has no repeated-new-payee or escalating-deposit rule yet.",
+  "description": "Telegram 'part-time task' scam: repeated, escalating deposits to NEW payees with no live call. Caught by the repeated-new-payee rule (the earlier known gap).",
   "events": [
     {
       "t": 0,
@@ -63,6 +62,7 @@
   ],
   "expect": {
     "min_tier": 2,
+    "min_tier_at_payment": 2,
     "message_flagged": true
   }
 }

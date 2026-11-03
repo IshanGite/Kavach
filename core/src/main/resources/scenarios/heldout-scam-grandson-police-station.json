@@ -1,0 +1,43 @@
+{
+  "id": "heldout-scam-grandson-police-station",
+  "kind": "scam",
+  "description": "Voice-clone 'grandson' in English with different words: fight, police station, lawyer fee, keep it from mom.",
+  "events": [
+    {
+      "t": 0,
+      "type": "call_started",
+      "number": "+91 91234 99887",
+      "in_contacts": false
+    },
+    {
+      "t": 3,
+      "type": "transcript",
+      "text": "Nani it's me Aman. I am in trouble, I got into a fight and they have brought me to the police station.",
+      "speaker": "caller"
+    },
+    {
+      "t": 20,
+      "type": "transcript",
+      "text": "I need forty thousand rupees for the lawyer right now. Please do not tell mom, she will get very upset. Send it to this number quickly.",
+      "speaker": "caller"
+    },
+    {
+      "t": 45,
+      "type": "payment",
+      "app": "Paytm",
+      "stage": "opened"
+    },
+    {
+      "t": 52,
+      "type": "payment",
+      "app": "Paytm",
+      "stage": "amount_entered",
+      "amount": 40000,
+      "payee": "Advocate Services"
+    }
+  ],
+  "expect": {
+    "min_tier": 2,
+    "min_tier_at_payment": 2
+  }
+}

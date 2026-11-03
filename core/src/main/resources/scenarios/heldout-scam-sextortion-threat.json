@@ -1,0 +1,43 @@
+{
+  "id": "heldout-scam-sextortion-threat",
+  "kind": "scam",
+  "description": "Threat to leak a video unless paid: shame-based coercion, no official claim.",
+  "events": [
+    {
+      "t": 0,
+      "type": "call_started",
+      "number": "+91 70707 88990",
+      "in_contacts": false
+    },
+    {
+      "t": 4,
+      "type": "transcript",
+      "text": "We have your private video. If you do not pay twenty thousand rupees right now we will send it to all your contacts and your family.",
+      "speaker": "caller"
+    },
+    {
+      "t": 25,
+      "type": "transcript",
+      "text": "Don't disconnect this call and don't tell anyone, you have only ten minutes.",
+      "speaker": "caller"
+    },
+    {
+      "t": 50,
+      "type": "payment",
+      "app": "PhonePe",
+      "stage": "opened"
+    },
+    {
+      "t": 58,
+      "type": "payment",
+      "app": "PhonePe",
+      "stage": "amount_entered",
+      "amount": 20000,
+      "payee": "video.delete@ybl"
+    }
+  ],
+  "expect": {
+    "min_tier": 2,
+    "min_tier_at_payment": 2
+  }
+}

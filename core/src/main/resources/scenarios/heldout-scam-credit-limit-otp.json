@@ -1,0 +1,49 @@
+{
+  "id": "heldout-scam-credit-limit-otp",
+  "kind": "scam",
+  "description": "'Increase your card limit' pretext: KYC re-verification and read out the code that just arrived.",
+  "events": [
+    {
+      "t": 0,
+      "type": "call_started",
+      "number": "+91 80123 55667",
+      "in_contacts": false
+    },
+    {
+      "t": 4,
+      "type": "transcript",
+      "text": "Good afternoon sir, your credit card limit is being increased but your KYC needs re-verification today itself.",
+      "speaker": "caller"
+    },
+    {
+      "t": 25,
+      "type": "transcript",
+      "text": "A six digit code has just come on your phone, please read it out to me so I can complete the verification, apna otp bata dijiye.",
+      "speaker": "caller"
+    },
+    {
+      "t": 40,
+      "type": "message",
+      "source": "VM-HDFCBK",
+      "text": "538201 is your OTP for adding a new payee. Do not share this OTP with anyone. -HDFC Bank"
+    },
+    {
+      "t": 70,
+      "type": "payment",
+      "app": "HDFC Bank",
+      "stage": "opened"
+    },
+    {
+      "t": 80,
+      "type": "payment",
+      "app": "HDFC Bank",
+      "stage": "amount_entered",
+      "amount": 49000,
+      "payee": "New Beneficiary Rajan"
+    }
+  ],
+  "expect": {
+    "min_tier": 2,
+    "min_tier_at_payment": 2
+  }
+}

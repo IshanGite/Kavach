@@ -23,6 +23,9 @@ Debug aid: Home > Debug shows the event log, the last accessibility dump and let
 | T10 | WhatsApp call | Unknown WhatsApp video call, then open the payment app | Log `VoIP call detected`, then same as T6 | Heuristic needs tuning in `VoipCallDetector` |
 | T11 | Report | After a session: Home > Complaint report | Fields filled, editable narrative, copy buttons, PDF share, Call 1930 first if "money sent" | |
 | T12 | Survives | Lock the phone, wait 10 min, repeat T3 | Still works | OEM battery settings, autostart, lock app in recents |
+| T14 | Live view | Home > Live view while running Simulate `scam-digital-arrest-english-demo` | Big gauge climbs with 35/60/80 marks, transcript lines appear with red highlights, rule chips with points, "bank-side signal" JSON, no personal data in it | Wrong engine shown: it follows whichever saw the latest activity |
+| T15 | Pre-flight | Home > Pre-flight check, tap all three live tests | Test pause screen appears and is spoken; model ping shows provider and ms; all ✅ except items you chose to skip | Fix each ❌ line using its hint |
+| T16 | Model latency on THIS phone | Pre-flight > Ping the language model, 3 times (first is cold) | Warm ping at or under the budget (8 s). If not, expect the keyword analyst to carry the language layer | Smaller model, or raise the timeout in Settings and accept a later (but still pre-PIN) language score |
 | T13 | Pause switch | Notification > Pause protection | Everything stops; no mic capture | |
 
 ## Day-0 audio results (fill in)

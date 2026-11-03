@@ -75,7 +75,7 @@ fun AppRoot(route: MutableState<String>, money: MutableState<Boolean>) {
     BackHandler(enabled = route.value != "home") { route.value = "home" }
     val title = mapOf(
         "home" to "Kavach", "setup" to "Setup", "settings" to "Settings", "simulate" to "Simulate (backup demo)",
-        "audio" to "Day-0 audio test", "debug" to "Debug", "report" to "Complaint report",
+        "audio" to "Day-0 audio test", "debug" to "Debug", "report" to "Complaint report", "live" to "Live view", "preflight" to "Pre-flight check",
     )[route.value] ?: "Kavach"
     Scaffold(
         topBar = {
@@ -93,6 +93,8 @@ fun AppRoot(route: MutableState<String>, money: MutableState<Boolean>) {
                 "audio" -> AudioTestScreen()
                 "debug" -> DebugScreen()
                 "report" -> ReportScreen(money.value)
+                "live" -> LiveScreen()
+                "preflight" -> PreflightScreen()
                 else -> HomeScreen(go = { route.value = it })
             }
         }
@@ -170,6 +172,8 @@ fun HomeScreen(go: (String) -> Unit) {
                 OutlinedButton(onClick = { go("debug") }, modifier = Modifier.weight(1f)) { Text("Debug") }
                 OutlinedButton(onClick = { go("settings") }, modifier = Modifier.weight(1f)) { Text("Settings") }
             }
+            Button(onClick = { go("preflight") }, modifier = Modifier.fillMaxWidth()) { Text("Pre-flight check (before the demo)") }
+            Button(onClick = { go("live") }, modifier = Modifier.fillMaxWidth()) { Text("Live view (for the judges' screen)") }
             OutlinedButton(onClick = { go("report") }, modifier = Modifier.fillMaxWidth()) { Text("Complaint report") }
         }
     }

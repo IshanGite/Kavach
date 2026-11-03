@@ -1,0 +1,49 @@
+{
+  "id": "heldout-scam-aadhaar-misuse-hinglish",
+  "kind": "scam",
+  "description": "Aadhaar 'misuse' in a fraud case, account will be seized; romanised Hindi with different vocabulary.",
+  "events": [
+    {
+      "t": 0,
+      "type": "call_started",
+      "number": "+91 98765 11223",
+      "in_contacts": false
+    },
+    {
+      "t": 5,
+      "type": "transcript",
+      "text": "Sir aapke Aadhaar ka istemaal ek fraud case mein hua hai. Aapka bank account seize kiya jayega agar aap cooperate nahi karte.",
+      "speaker": "caller"
+    },
+    {
+      "t": 35,
+      "type": "transcript",
+      "text": "Yeh bahut gambhir matter hai, kisi se is baare mein baat mat kijiye aur line par bane rahiye jab tak hum verification poora na karein.",
+      "speaker": "caller"
+    },
+    {
+      "t": 65,
+      "type": "transcript",
+      "text": "Apni sampatti ko surakshit karne ke liye turant ek surakshit khate mein paise bhej dijiye, jaanch ke baad wapas mil jayenge.",
+      "speaker": "caller"
+    },
+    {
+      "t": 95,
+      "type": "payment",
+      "app": "PhonePe",
+      "stage": "opened"
+    },
+    {
+      "t": 104,
+      "type": "payment",
+      "app": "PhonePe",
+      "stage": "amount_entered",
+      "amount": 90000,
+      "payee": "Secure Holding Account"
+    }
+  ],
+  "expect": {
+    "min_tier": 2,
+    "min_tier_at_payment": 2
+  }
+}

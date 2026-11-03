@@ -1,0 +1,54 @@
+{
+  "id": "heldout-scam-electricity-disconnect-quicksupport",
+  "kind": "scam",
+  "description": "Electricity cut-off threat tonight, install a support app and read out the nine-digit code, then a small 'verification' payment.",
+  "events": [
+    {
+      "t": 0,
+      "type": "call_started",
+      "number": "+91 70001 22334",
+      "in_contacts": false
+    },
+    {
+      "t": 4,
+      "type": "transcript",
+      "text": "Sir your electricity connection will be cut tonight at nine thirty because last month's bill is not updated in our system.",
+      "speaker": "caller"
+    },
+    {
+      "t": 25,
+      "type": "transcript",
+      "text": "To update it quickly please open the play store and install the QuickSupport application and tell me the nine digit code that it shows.",
+      "speaker": "caller"
+    },
+    {
+      "t": 50,
+      "type": "remote_access",
+      "app": "TeamViewer QuickSupport"
+    },
+    {
+      "t": 60,
+      "type": "transcript",
+      "text": "Now pay ten rupees as verification from your payment app, I will guide you step by step.",
+      "speaker": "caller"
+    },
+    {
+      "t": 80,
+      "type": "payment",
+      "app": "Google Pay",
+      "stage": "opened"
+    },
+    {
+      "t": 90,
+      "type": "payment",
+      "app": "Google Pay",
+      "stage": "amount_entered",
+      "amount": 10,
+      "payee": "electricity.update@ybl"
+    }
+  ],
+  "expect": {
+    "min_tier": 3,
+    "min_tier_at_payment": 3
+  }
+}

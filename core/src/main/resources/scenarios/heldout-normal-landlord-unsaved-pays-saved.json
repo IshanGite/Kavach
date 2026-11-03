@@ -1,0 +1,53 @@
+{
+  "id": "heldout-normal-landlord-unsaved-pays-saved",
+  "kind": "normal",
+  "description": "Landlord calls from an unsaved number; the user pays the same saved landlord UPI as every month.",
+  "baseline": [
+    {
+      "payee": "landlord.sharma@okhdfcbank",
+      "amount": 18000.0,
+      "count": 6
+    },
+    {
+      "payee": "ramesh.kirana@ybl",
+      "amount": 200.0,
+      "count": 6
+    },
+    {
+      "payee": "milk.dairy@upi",
+      "amount": 60.0,
+      "count": 8
+    }
+  ],
+  "events": [
+    {
+      "t": 0,
+      "type": "call_started",
+      "number": "+91 98111 22334",
+      "in_contacts": false
+    },
+    {
+      "t": 4,
+      "type": "transcript",
+      "text": "Namaste, rent ka reminder tha, is mahine ka kiraya same account mein bhej dena.",
+      "speaker": "caller"
+    },
+    {
+      "t": 40,
+      "type": "payment",
+      "app": "PhonePe",
+      "stage": "opened"
+    },
+    {
+      "t": 48,
+      "type": "payment",
+      "app": "PhonePe",
+      "stage": "amount_entered",
+      "amount": 18000,
+      "payee": "landlord.sharma@okhdfcbank"
+    }
+  ],
+  "expect": {
+    "max_tier": 1
+  }
+}

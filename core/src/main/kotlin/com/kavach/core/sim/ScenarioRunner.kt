@@ -58,6 +58,7 @@ class ScenarioRunner(
     private val scamNumbers: Set<String> = ScamNumbers.loadBundled(),
     /** Optional real/fake LLM for the language layer; null means the keyword analyst only. */
     private val llm: LlmClient? = null,
+    private val compactPrompt: Boolean = false,
 ) {
     private fun analystFor(s: Scenario): TranscriptAnalyst? = when (s.analyst) {
         "none" -> null
@@ -67,7 +68,14 @@ class ScenarioRunner(
             },
             cfg,
         )
-        else -> if (llm != null) HybridTranscriptAnalyst(llm, cfg) else KeywordTranscriptAnalyst
+        // A model that is right about the risk (0) but lists a business NAME as a payee detail: must never trigger the payee-from-call override.
+        "names-as-payee" -> HybridTranscriptAnalyst(
+            ScriptedLlmClient("name-happy-llm") {
+                """{"id":"none","t":[0,0,0,0,0,0,0],"type":"none","risk":0,"q":[],"p":["Sunrise Clinic","Dr Mehta"]}"""
+            },
+            cfg,
+        )
+        else -> if (llm != null) HybridTranscriptAnalyst(llm, cfg) { compactPrompt } else KeywordTranscriptAnalyst
     }
 
     private fun latencyMs(s: Scenario) = if (s.analyst == "slow") 12_000L else 0L

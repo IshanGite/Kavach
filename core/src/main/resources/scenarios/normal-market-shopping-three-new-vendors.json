@@ -1,0 +1,60 @@
+{
+  "id": "normal-market-shopping-three-new-vendors",
+  "kind": "normal",
+  "description": "Three small purchases from three different street vendors in ten minutes. New payees, but small and not escalating: at most a nudge.",
+  "events": [
+    {
+      "t": 0,
+      "type": "payment",
+      "app": "PhonePe",
+      "stage": "opened"
+    },
+    {
+      "t": 5,
+      "type": "payment",
+      "app": "PhonePe",
+      "stage": "amount_entered",
+      "amount": 80,
+      "payee": "Fresh Fruit Stall"
+    },
+    {
+      "t": 20,
+      "type": "payment_dismissed"
+    },
+    {
+      "t": 200,
+      "type": "payment",
+      "app": "PhonePe",
+      "stage": "opened"
+    },
+    {
+      "t": 206,
+      "type": "payment",
+      "app": "PhonePe",
+      "stage": "amount_entered",
+      "amount": 150,
+      "payee": "Handloom Corner"
+    },
+    {
+      "t": 220,
+      "type": "payment_dismissed"
+    },
+    {
+      "t": 420,
+      "type": "payment",
+      "app": "PhonePe",
+      "stage": "opened"
+    },
+    {
+      "t": 426,
+      "type": "payment",
+      "app": "PhonePe",
+      "stage": "amount_entered",
+      "amount": 120,
+      "payee": "Chai Wala Ramu"
+    }
+  ],
+  "expect": {
+    "max_tier": 1
+  }
+}

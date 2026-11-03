@@ -1,0 +1,50 @@
+{
+  "id": "heldout-scam-cbi-whatsapp-english-formal",
+  "kind": "scam",
+  "description": "Formal English 'Central Bureau' video call with an urgent clearance deposit and no-disclosure order.",
+  "events": [
+    {
+      "t": 0,
+      "type": "call_started",
+      "number": "+91 98765 11223",
+      "in_contacts": false,
+      "channel": "voip"
+    },
+    {
+      "t": 5,
+      "type": "transcript",
+      "text": "I am a senior officer of the Central Bureau. Your identity has been used for narcotics trafficking and a warrant has been issued.",
+      "speaker": "caller"
+    },
+    {
+      "t": 60,
+      "type": "transcript",
+      "text": "You are placed under surveillance and must not disclose this call to anyone including your family. You must act immediately.",
+      "speaker": "caller"
+    },
+    {
+      "t": 120,
+      "type": "transcript",
+      "text": "Deposit the clearance amount into the supervised account right now, rupees one lakh, and your case will be reviewed.",
+      "speaker": "caller"
+    },
+    {
+      "t": 160,
+      "type": "payment",
+      "app": "PhonePe",
+      "stage": "opened"
+    },
+    {
+      "t": 168,
+      "type": "payment",
+      "app": "PhonePe",
+      "stage": "amount_entered",
+      "amount": 100000,
+      "payee": "Supervised Clearance Account"
+    }
+  ],
+  "expect": {
+    "min_tier": 2,
+    "min_tier_at_payment": 2
+  }
+}

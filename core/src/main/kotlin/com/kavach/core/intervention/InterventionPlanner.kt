@@ -119,6 +119,8 @@ class InterventionPlanner(private val cfg: RiskConfig) {
                 RuleCode.OTP_OR_COLLECT_DURING_CALL -> out += T.otpDuringCall(l)
                 RuleCode.UNKNOWN_LIVE_CALL -> out += T.unknownCaller(l)
                 RuleCode.SYNTHETIC_VOICE -> out += T.syntheticVoice(l)
+                RuleCode.REPEATED_NEW_PAYEES -> out += T.repeatedNewPayees(l)
+                RuleCode.ESCALATING_NEW_PAYEE_AMOUNTS -> out += T.escalating(l)
                 else -> Unit
             }
         }
@@ -182,6 +184,8 @@ internal object T {
     fun bigAmount(l: Lang, detail: String) = pick(l, "This amount is ${detail.ifBlank { "much higher than" }} your usual payment.", "यह रकम आपकी सामान्य रकम से ${detail.ifBlank { "बहुत ज़्यादा" }} है।")
     fun otpDuringCall(l: Lang) = pick(l, "An OTP or payment request arrived during this call.", "इस कॉल के दौरान OTP या पेमेंट रिक्वेस्ट आई।")
     fun unknownCaller(l: Lang) = pick(l, "You are on a live call with a number that is not in your contacts.", "आप ऐसे नंबर से कॉल पर हैं जो आपके कॉन्टैक्ट्स में नहीं है।")
+    fun repeatedNewPayees(l: Lang) = pick(l, "You are paying several different new accounts in a row, a common pattern in investment and task scams.", "आप लगातार कई नए अकाउंट में पैसे भेज रहे हैं, निवेश और टास्क ठगी में ऐसा ही होता है।")
+    fun escalating(l: Lang) = pick(l, "Each payment is bigger than the last one.", "हर पेमेंट पिछले से बड़ा है।")
     fun syntheticVoice(l: Lang) = pick(l, "The caller's voice sounds artificial.", "कॉलर की आवाज़ बनावटी लग रही है।")
 
     fun mythPolice(l: Lang) = pick(l, "CBI and police never arrest anyone over a video call and never ask for money.", "सीबीआई और पुलिस वीडियो कॉल पर गिरफ्तारी नहीं करती और पैसे नहीं मांगती।")

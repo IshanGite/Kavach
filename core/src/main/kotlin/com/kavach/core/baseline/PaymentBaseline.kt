@@ -12,6 +12,9 @@ interface PaymentBaseline {
     fun historySize(): Int
     fun medianAmount(): Double?
     fun paymentCount(payee: String?): Int
+
+    /** Median of what this user usually pays THIS payee, or null if unknown. Paying a family member their usual amount is not unusual. */
+    fun medianAmountFor(payee: String?): Double? = null
     fun record(payment: PastPayment)
 }
 
@@ -31,6 +34,15 @@ class InMemoryBaseline(initial: List<PastPayment> = emptyList()) : PaymentBaseli
         if (payee.isNullOrBlank()) return 0
         val key = Extractors.normalizePayee(payee)
         return payments.count { Extractors.normalizePayee(it.payee) == key }
+    }
+
+    override fun medianAmountFor(payee: String?): Double? {
+        if (payee.isNullOrBlank()) return null
+        val key = Extractors.normalizePayee(payee)
+        val v = payments.filter { Extractors.normalizePayee(it.payee) == key }.map { it.amountRupees }.sorted()
+        if (v.isEmpty()) return null
+        val mid = v.size / 2
+        return if (v.size % 2 == 1) v[mid] else (v[mid - 1] + v[mid]) / 2.0
     }
 
     override fun record(payment: PastPayment) {

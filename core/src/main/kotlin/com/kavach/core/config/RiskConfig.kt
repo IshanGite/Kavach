@@ -31,6 +31,9 @@ data class RiskConfig(
     @SerialName("odd_hour_end") val oddHourEnd: Int = 6,
     @SerialName("spoof_threshold") val spoofThreshold: Double = 0.7,
     /** A payee paid at least this many times counts as "saved, frequently paid". */
+    /** A payee's own median is used instead of the global one once it has this many payments. */
+    @SerialName("min_payments_for_payee_median") val minPaymentsForPayeeMedian: Int = 2,
+    @SerialName("new_payee_window_hours") val newPayeeWindowHours: Int = 24,
     @SerialName("frequent_payee_min_payments") val frequentPayeeMinPayments: Int = 3,
     @SerialName("pause_seconds_tier2") val pauseSecondsTier2: Int = 30,
     @SerialName("pause_seconds_tier3") val pauseSecondsTier3: Int = 120,
@@ -55,6 +58,10 @@ data class RiskConfig(
         @SerialName("synthetic_voice") val syntheticVoice: Int = 10,
         @SerialName("number_on_scam_list") val numberOnScamList: Int = 40,
         @SerialName("related_sms_flagged") val relatedSmsFlagged: Int = 10,
+        /** Two or more distinct never-paid payees attempted within 24 h (investment / task scams drip money to new accounts). */
+        @SerialName("repeated_new_payees") val repeatedNewPayees: Int = 20,
+        /** ...and this attempt is larger than the earlier ones and well above the user's usual amount (escalating deposits). */
+        @SerialName("escalating_new_payee_amounts") val escalatingNewPayeeAmounts: Int = 10,
     )
 
     @Serializable

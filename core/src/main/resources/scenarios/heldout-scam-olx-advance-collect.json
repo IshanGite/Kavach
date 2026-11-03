@@ -1,0 +1,46 @@
+{
+  "id": "heldout-scam-olx-advance-collect",
+  "kind": "scam",
+  "description": "Marketplace buyer: 'approve my request and enter your PIN to receive the advance'.",
+  "events": [
+    {
+      "t": 0,
+      "type": "call_started",
+      "number": "+91 62000 33445",
+      "in_contacts": false
+    },
+    {
+      "t": 4,
+      "type": "transcript",
+      "text": "Hello I want to buy your item, I will send you an advance. Just approve the request I am sending and enter your PIN to receive the money.",
+      "speaker": "caller"
+    },
+    {
+      "t": 25,
+      "type": "collect",
+      "amount": 4999,
+      "payee": "buyer.advance@ybl"
+    },
+    {
+      "t": 30,
+      "type": "payment",
+      "app": "PhonePe",
+      "stage": "opened",
+      "amount": 4999,
+      "payee": "buyer.advance@ybl"
+    },
+    {
+      "t": 38,
+      "type": "payment",
+      "app": "PhonePe",
+      "stage": "pin_screen",
+      "amount": 4999,
+      "payee": "buyer.advance@ybl"
+    }
+  ],
+  "expect": {
+    "min_tier": 2,
+    "min_tier_at_payment": 2,
+    "pause_before_pin": true
+  }
+}

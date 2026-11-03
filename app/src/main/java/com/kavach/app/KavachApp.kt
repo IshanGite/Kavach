@@ -128,6 +128,7 @@ class KavachService : Service() {
             ServiceCompat.startForeground(this, Notifier.NOTIF_SERVICE, c.notifier.serviceNotification(), ServiceInfo.FOREGROUND_SERVICE_TYPE_SPECIAL_USE)
         }
         if (c.settings.state.value.companionEnabled) c.companion.start()
+        c.live.warmUpModel()
         c.live.note("Protection ON")
         return START_STICKY
     }

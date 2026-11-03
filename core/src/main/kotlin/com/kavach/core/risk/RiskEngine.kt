@@ -20,6 +20,7 @@ enum class Tier(val level: Int) {
 enum class RuleCode {
     UNKNOWN_LIVE_CALL, LONG_CALL, UNKNOWN_VOIP_OR_VIDEO, PAYMENT_APP_DURING_CALL, NEW_PAYEE, AMOUNT_ABOVE_USUAL,
     ODD_HOUR, REMOTE_ACCESS_ACTIVE, OTP_OR_COLLECT_DURING_CALL, SYNTHETIC_VOICE, NUMBER_ON_SCAM_LIST, RELATED_SMS_FLAGGED,
+    REPEATED_NEW_PAYEES, ESCALATING_NEW_PAYEE_AMOUNTS,
 }
 
 enum class HardOverride { REMOTE_ACCESS_WITH_PAYMENT, PAYEE_FROM_CALL }
@@ -83,11 +84,29 @@ class RiskEngine(
         if (intent != null && payee != null && !knownPayee) rules += RuleHit(RuleCode.NEW_PAYEE, p.newPayee, payee)
 
         val amount = intent?.amountRupees
-        val median = baseline.medianAmount()
-        if (amount != null && median != null && baseline.historySize() >= cfg.minHistoryForMedian &&
+        // What is "usual" is judged per payee once we know them (their own median), otherwise against the user's overall median.
+        val payeeMedian = if (payee != null && baseline.paymentCount(payee) >= cfg.minPaymentsForPayeeMedian) baseline.medianAmountFor(payee) else null
+        val median = payeeMedian ?: baseline.medianAmount()
+        if (amount != null && median != null && baseline.historySize() >= cfg.minHistoryForMedian && median > 0 &&
             amount > cfg.amountMultipleOfMedian * median
         ) {
             rules += RuleHit(RuleCode.AMOUNT_ABOVE_USUAL, p.amountOver3xMedian, "${(amount / median).toInt()}x usual")
+        }
+
+        // Investment / task scams drip money to a series of new accounts, usually with no call at all.
+        if (intent != null && payee != null && !knownPayee) {
+            val windowStart = s.nowMs - cfg.newPayeeWindowHours * 3_600_000L
+            val me = Extractors.normalizePayee(payee)
+            val newOthers = s.payeeAttempts.filter { it.atMs >= windowStart && Extractors.normalizePayee(it.payee) != me }
+                .filter { baseline.paymentCount(it.payee) == 0 && Extractors.normalizePayee(it.payee) !in trustedPayees() }
+            if (newOthers.isNotEmpty()) {
+                rules += RuleHit(RuleCode.REPEATED_NEW_PAYEES, p.repeatedNewPayees, "${newOthers.size + 1} new payees in ${cfg.newPayeeWindowHours} h")
+                val prior = newOthers.mapNotNull { it.amountRupees }.maxOrNull()
+                val usual = baseline.medianAmount()
+                if (amount != null && prior != null && amount > prior && usual != null && usual > 0 && amount > cfg.amountMultipleOfMedian * usual) {
+                    rules += RuleHit(RuleCode.ESCALATING_NEW_PAYEE_AMOUNTS, p.escalatingNewPayeeAmounts, "bigger than the earlier ones")
+                }
+            }
         }
 
         if ((unknown || intent != null) && isOddHour(s.nowMs)) rules += RuleHit(RuleCode.ODD_HOUR, p.oddHour)

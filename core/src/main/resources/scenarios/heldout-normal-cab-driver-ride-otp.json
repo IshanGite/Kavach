@@ -1,0 +1,27 @@
+{
+  "id": "heldout-normal-cab-driver-ride-otp",
+  "kind": "normal",
+  "description": "Cab driver outside asks for the ride OTP. A real OTP ask that is completely legitimate.",
+  "events": [
+    {
+      "t": 0,
+      "type": "call_started",
+      "number": "+91 90012 33445",
+      "in_contacts": false
+    },
+    {
+      "t": 4,
+      "type": "transcript",
+      "text": "Sir main aapka cab driver hoon, gate ke bahar khada hoon, ride ka OTP bataiye please.",
+      "speaker": "caller"
+    },
+    {
+      "t": 30,
+      "type": "call_ended",
+      "duration": 30
+    }
+  ],
+  "expect": {
+    "max_tier": 1
+  }
+}

@@ -1,0 +1,37 @@
+{
+  "id": "heldout-normal-friend-lends-money",
+  "kind": "normal",
+  "description": "Saved friend asks to be sent Rs 5,000 for tickets, user pays his saved UPI.",
+  "events": [
+    {
+      "t": 0,
+      "type": "call_started",
+      "number": "+91 98100 12345",
+      "in_contacts": true,
+      "name": "Vikram"
+    },
+    {
+      "t": 4,
+      "type": "transcript",
+      "text": "Bhai tickets book karne hain, 5000 bhej de, kal wapas kar dunga.",
+      "speaker": "caller"
+    },
+    {
+      "t": 30,
+      "type": "payment",
+      "app": "PhonePe",
+      "stage": "opened"
+    },
+    {
+      "t": 38,
+      "type": "payment",
+      "app": "PhonePe",
+      "stage": "amount_entered",
+      "amount": 5000,
+      "payee": "vikram.friend@okaxis"
+    }
+  ],
+  "expect": {
+    "max_tier": 0
+  }
+}

@@ -19,6 +19,7 @@ object KeywordAnalyst {
     /** Latin-script terms need word boundaries; Devanagari terms are plain substrings. Spaces match any run of whitespace. */
     private fun lex(vararg terms: String): Regex {
         val parts = terms.map { t ->
+            if (t.startsWith("re:")) return@map t.removePrefix("re:") // raw regex for a whole class of phrasings
             val body = Regex.escape(t).replace(" ", """\E\s+\Q""")
             if (t.all { it.code < 128 }) """(?<![\p{L}\p{N}])$body(?![\p{L}\p{N}])""" else body
         }
@@ -30,17 +31,27 @@ object KeywordAnalyst {
         "customs department", "narcotics", "enforcement directorate", "rbi officer", "trai", "supreme court", "magistrate",
         "income tax officer", "senior officer", "officer", "mumbai police", "delhi police", "sub inspector",
         "सीबीआई", "पुलिस", "इंस्पेक्टर", "साइबर क्राइम", "कस्टम", "नारकोटिक्स", "अधिकारी", "क्राइम ब्रांच",
+        "reserve bank", "enforcement cell", "enforcement", "cyber cell", "crime cell", "telecom authority", "central bureau", "income tax department",
+        "court", "judge", "supervised",
     )
     private val THREAT = lex(
         "arrest", "arrested", "arrest warrant", "warrant", "digital arrest", "giraftar", "gireftar", "giraftaar", "girftar",
         "jail", "fir", "money laundering", "drugs", "illegal", "legal action", "case registered", "case darj", "custody",
         "court", "account will be blocked", "account blocked", "account freeze", "account frozen", "suspended", "seized",
         "गिरफ्तार", "गिरफ़्तार", "अरेस्ट", "वारंट", "जेल", "मनी लॉन्ड्रिंग", "ड्रग्स", "केस दर्ज", "कस्टडी", "अकाउंट बंद", "अकाउंट ब्लॉक",
+        "fraud case", "seize kiya", "seized", "will be seized", "narcotics trafficking", "surveillance", "legal trouble",
+        "will be disconnected", "be disconnected", "disconnected in", "sim will be blocked", "number will be blocked",
+        // blackmail / shame: "we have your private video, we will send it to all your contacts"
+        "private video", "obscene", "blackmail", "leak", "go viral", "send it to all", "send it to your family", "share it with your family", "expose you",
+        "re:(?:will|shall)\\s+(?:send|share|post|upload|leak)\\s+(?:it|this|the video|your)\\b[^.]{0,40}\\b(?:contacts|family|friends|relatives|everyone|facebook|whatsapp)",
+        "re:\\b(?:you will|aapko|will be)\\b[^.]{0,25}\\b(?:imprisoned|jail|prison|sentenced|punished|fined)\\b",
     )
     private val URGENCY = lex(
         "immediately", "right now", "urgent", "urgently", "within an hour", "within 30 minutes", "within 1 hour",
         "last chance", "deadline", "abhi", "turant", "jaldi", "fauran", "foran", "at once", "without delay", "just now",
         "तुरंत", "अभी", "जल्दी", "फौरन", "एक घंटे के अंदर",
+        "today itself", "today only", "by today", "within today", "aaj hi", "aaj ke aaj", "tonight", "by tonight", "before midnight", "in two hours", "within two hours",
+        "ten minutes", "only ten minutes", "re:\\b(?:within|in|only)\\s+(?:\\w+\\s+){0,2}(?:minutes|hours|hrs)\\b",
     )
     private val SECRECY = lex(
         "don't tell anyone", "do not tell anyone", "dont tell anyone", "don't tell anybody", "do not tell your family",
@@ -51,6 +62,12 @@ object KeywordAnalyst {
         "kisi ko mat batana", "kisi ko nahi batana", "kisi ko mat bataiye", "kisi ko na batayein", "call mat kaatna",
         "call mat kaato", "call mat katna", "call mat kat", "phone mat rakhna", "line par bane rahiye", "line pe bane rahiye",
         "किसी को मत बताना", "किसी को मत बताइए", "किसी को न बताएं", "कॉल मत काटना", "कॉल मत काटिए", "फोन मत रखना", "गोपनीय",
+        "keep this confidential", "sensitive investigation", "sensitive matter", "remain on this", "remain on the call", "remain on the line", "remain available",
+        "stay available", "stay on this", "do not leave", "don't leave", "kindly stay on the line", "baat mat kijiye", "baat mat karna", "mat kehna", "kisi se mat",
+        // "do not / must not / should not <discuss|disclose|share|tell|speak|mention> ... <anyone|family|relatives...>"
+        "re:\\b(?:do not|don't|dont|must not|should not|never|not to|not be)\\s+(?:\\w+\\s+){0,3}?(?:discuss|disclos|shar|speak|talk|mention|tell|inform|reveal)\\w*\\b[^.]{0,40}?\\b(?:anyone|anybody|any one|nobody|family|relatives|others|mom|mother|dad|father|mummy|papa|wife|husband|parents|brother|sister|friends|neighbours)",
+        "re:\\b(?:kisi se|kisi ko|kisiko|ghar walon se|parivar se)\\s+(?:\\w+\\s+){0,2}?(?:mat|na|nahi)\\s+\\w+",
+        "re:\\b(?:switch off|turn off|off)\\b[^.]{0,15}\\b(?:camera|video)\\b",
     )
     private val PAYMENT = lex(
         "transfer money", "transfer the money", "transfer the amount", "send money", "verification amount", "verification transfer",
@@ -58,25 +75,42 @@ object KeywordAnalyst {
         "pay a fine", "bail amount", "bail money", "deposit the amount", "send the amount", "transfer rs", "transfer ₹",
         "upi id", "paise bhejo", "paise transfer", "paisa transfer", "paise bhej", "amount transfer", "rupaye bhejo", "rupaye transfer",
         "पैसे भेज", "पैसे ट्रांसफर", "रकम ट्रांसफर", "वेरिफिकेशन अमाउंट", "सेफ अकाउंट", "जमानत",
+        "holding account", "secure account", "surakshit khate", "supervised account", "court account", "escrow", "clearance amount", "clearance charges", "customs charges",
+        "processing fee", "registration fee", "release the amount", "release the prize", "claim fee", "bail guarantee", "security amount", "refundable", "send it to this number",
+        "send it to our", "send it to the account", "send me money", "need money", "will be returned", "wapas mil jayenge",
+        // "transfer / send / deposit / move / pay ... account|balance|amount|fee|rupees"
+        "re:\\b(?:transfer|send|deposit|move|pay|remit|bhej(?:o|iye|dijiye|na)?|jama)\\b[^.]{0,50}?\\b(?:account|upi|khat[ae]|balance|amount|fee|charges|deposit|rupees|rupaye|paise|lakh|thousand|hazaar|savings)",
+        "re:\\bneed\\s+[^.]{0,30}\\b(?:rupees|thousand|lakh|hazaar|money|cash)\\b",
     )
     private val REMOTE_OTP = lex(
         "anydesk", "any desk", "teamviewer", "team viewer", "quicksupport", "quick support", "rustdesk", "screen share", "share your screen",
         "install the app", "download the app", "share the otp", "tell me the otp", "send me the otp", "your otp", "apna otp", "otp batao",
         "otp bataiye", "otp share", "share otp", "tell me the code", "read the code", "enter your pin", "your upi pin", "upi pin batao",
         "otp bhi", "otp dena", "otp de do", "otp bata", "otp bhej", "otp send", "otp bol", "pin enter", "upi pin", "pin daalna", "pin dalna",
-        "pin batao", "code batao",
+        "pin batao", "code batao", "read it out", "read out the code", "approve the request", "accept the request", "approve it", "install the quicksupport",
+        "nine digit code", "9 digit code", "re:\\b(?:install|download|open)\\b[^.]{0,30}\\b(?:app|application|apk)\\b",
         "एनीडेस्क", "टीमव्यूअर", "स्क्रीन शेयर", "ओटीपी बताओ", "ओटीपी बताइए", "ओटीपी शेयर",
     )
     private val EMOTIONAL = lex(
         "accident", "hospital", "operation", "ambulance", "bail", "police ne pakad", "picked me up", "in custody", "serious condition",
         "i am in trouble", "i'm in trouble", "mujhe paise chahiye", "emergency", "blood", "kidnap", "kidnapped",
         "एक्सीडेंट", "दुर्घटना", "अस्पताल", "ऑपरेशन", "ज़मानत", "मुसीबत में", "पुलिस ने पकड़",
+        "police station", "lawyer", "advocate", "got into a fight", "in a fight", "thane", "in jail", "got arrested", "in trouble",
     )
 
     private val NEGATED_SECRET = Regex(
         """(?:do not|don't|dont|never|mat|na|kabhi na|kabhi nahi)\s+(?:ever\s+)?(?:share|tell|give|send|bata\w*|batana|dena|de)\s+(?:your\s+|apna\s+|the\s+|kisi ko\s+)?(?:otp|pin|upi pin|code|password)""",
         RegexOption.IGNORE_CASE,
     )
+    /** A sentence that talks ABOUT what others might ask ("if anyone asks you to install an app...") is advice, not a request. */
+    private val WARNING_CONTEXT = Regex(
+        """\b(?:if (?:anyone|someone|any one|somebody|they)|fraudsters?|scammers?|beware|awareness|courtesy call|be careful|stay alert|aware of)\b""",
+        RegexOption.IGNORE_CASE,
+    )
+
+    private fun withoutWarnings(text: String): String =
+        NEGATED_SECRET.replace(text.split(Regex("""(?<=[.!?\n])\s+""")).filterNot { WARNING_CONTEXT.containsMatchIn(it) }.joinToString(" "), " ")
+
     private val OFFICER_TITLE = lex(
         "inspector", "sub inspector", "cyber crime", "cybercrime", "crime branch", "narcotics", "enforcement directorate", "magistrate",
         "mumbai police", "delhi police", "इंस्पेक्टर", "साइबर क्राइम", "क्राइम ब्रांच", "नारकोटिक्स",
@@ -87,6 +121,7 @@ object KeywordAnalyst {
     private val COURIER_ID = lex("fedex", "dhl", "courier", "parcel", "consignment", "blue dart", "कूरियर", "पार्सल")
     private val FAMILY_ID = lex(
         "papa", "mummy", "mom", "dad", "beta", "bhaiya", "didi", "mama", "chacha", "uncle", "your son", "your daughter",
+        "nani", "nana", "dadi", "dada", "grandson", "granddaughter", "bhai", "behen", "mausi", "bua", "chachu", "this is aman", "it is me",
         "it's me", "its me", "main hoon", "पापा", "मम्मी", "बेटा", "भैया", "दीदी", "मामा", "चाचा",
     )
     private val KYC = lex("kyc", "केवाईसी", "pan card", "aadhaar linked", "aadhaar", "आधार")
@@ -106,7 +141,7 @@ object KeywordAnalyst {
         val secrecy = hits(SECRECY, text)
         val payment = hits(PAYMENT, text)
         // "Never share your OTP" is a warning, not a request: strip negated phrases before looking for OTP/PIN asks.
-        val remote = hits(REMOTE_OTP, NEGATED_SECRET.replace(text, " "))
+        val remote = hits(REMOTE_OTP, withoutWarnings(text))
         val emotional = hits(EMOTIONAL, text)
 
         val tactics = Tactics(
@@ -179,7 +214,7 @@ object KeywordAnalyst {
         if (coerciveAsk && pressure) bonus += 12.0
         // A PIN is only ever needed to SEND money, and no bank or agency asks for an OTP, a PIN or a remote-access app on a call.
         // "Enter your PIN to receive money" has no authority and no threat, yet it is the classic UPI scam: the ask itself is the signature.
-        if (t.remoteAccessOrOtpRequest >= 0.6) bonus += 15.0
+        if (t.remoteAccessOrOtpRequest >= 0.6) bonus += 25.0
         return (base + bonus).toInt().coerceIn(0, 100)
     }
 }

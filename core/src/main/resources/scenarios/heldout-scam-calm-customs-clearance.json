@@ -1,0 +1,49 @@
+{
+  "id": "heldout-scam-calm-customs-clearance",
+  "kind": "scam",
+  "description": "Soft-spoken courier-hold scam: polite tone, 'confidentiality', clearance charges.",
+  "events": [
+    {
+      "t": 0,
+      "type": "call_started",
+      "number": "+91 80999 11000",
+      "in_contacts": false
+    },
+    {
+      "t": 5,
+      "type": "transcript",
+      "text": "Good morning sir, kindly stay on the line, our senior will connect you shortly. Your parcel is on hold at customs.",
+      "speaker": "caller"
+    },
+    {
+      "t": 30,
+      "type": "transcript",
+      "text": "For confidentiality of the investigation please do not share these details with anybody. Clearance charges have to be paid today to release the consignment.",
+      "speaker": "caller"
+    },
+    {
+      "t": 55,
+      "type": "transcript",
+      "text": "Please transfer the clearance charges to the account I am sharing, upi id clear dot parcel at ybl",
+      "speaker": "caller"
+    },
+    {
+      "t": 80,
+      "type": "payment",
+      "app": "PhonePe",
+      "stage": "opened"
+    },
+    {
+      "t": 90,
+      "type": "payment",
+      "app": "PhonePe",
+      "stage": "amount_entered",
+      "amount": 18000,
+      "payee": "clear.parcel@ybl"
+    }
+  ],
+  "expect": {
+    "min_tier": 2,
+    "min_tier_at_payment": 2
+  }
+}

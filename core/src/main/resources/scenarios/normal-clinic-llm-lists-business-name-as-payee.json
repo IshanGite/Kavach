@@ -1,0 +1,42 @@
+{
+  "id": "normal-clinic-llm-lists-business-name-as-payee",
+  "kind": "normal",
+  "description": "Regression for a real bug found with the live model: it scored the call 0 but listed 'Sunrise Clinic' under payee details. A name said on a call must never trigger the payee-from-call hard override.",
+  "events": [
+    {
+      "t": 0,
+      "type": "call_started",
+      "number": "+91 80222 44556",
+      "in_contacts": false
+    },
+    {
+      "t": 4,
+      "type": "transcript",
+      "text": "Hello, this is Sunrise clinic confirming your appointment tomorrow at five with the doctor, please carry your previous reports.",
+      "speaker": "caller"
+    },
+    {
+      "t": 70,
+      "type": "call_ended",
+      "duration": 70
+    },
+    {
+      "t": 300,
+      "type": "payment",
+      "app": "PhonePe",
+      "stage": "opened"
+    },
+    {
+      "t": 310,
+      "type": "payment",
+      "app": "PhonePe",
+      "stage": "amount_entered",
+      "amount": 600,
+      "payee": "Sunrise Clinic"
+    }
+  ],
+  "expect": {
+    "max_tier": 1
+  },
+  "analyst": "names-as-payee"
+}

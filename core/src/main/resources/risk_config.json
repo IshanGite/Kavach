@@ -12,7 +12,9 @@
     "otp_or_collect_during_call": 10,
     "synthetic_voice": 10,
     "number_on_scam_list": 40,
-    "related_sms_flagged": 10
+    "related_sms_flagged": 10,
+    "repeated_new_payees": 20,
+    "escalating_new_payee_amounts": 10
   },
   "tiers": { "nudge": 35, "pause": 60, "pause_guardian": 80 },
   "context_weight": 0.6,
@@ -29,6 +31,8 @@
   "odd_hour_start": 23,
   "odd_hour_end": 6,
   "spoof_threshold": 0.7,
+  "min_payments_for_payee_median": 2,
+  "new_payee_window_hours": 24,
   "frequent_payee_min_payments": 3,
   "pause_seconds_tier2": 30,
   "pause_seconds_tier3": 120,

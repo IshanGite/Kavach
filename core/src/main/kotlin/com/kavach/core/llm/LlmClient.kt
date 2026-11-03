@@ -11,6 +11,9 @@ import java.net.URL
 
 data class LlmRequest(val system: String, val user: String, val maxTokens: Int = 400)
 
+/** A throw-away request used to load the model into memory before the first real analysis. */
+val WARMUP_REQUEST = LlmRequest("Reply with {}", "ok", maxTokens = 4)
+
 data class LlmResponse(val text: String, val provider: String, val latencyMs: Long)
 
 class LlmUnavailable(message: String, cause: Throwable? = null) : Exception(message, cause)
@@ -56,6 +59,8 @@ class OllamaClient(
     private val transport: HttpTransport = UrlConnectionTransport(),
     private val timeoutMs: Int = 30_000,
     private val clock: () -> Long = System::currentTimeMillis,
+    /** Keep the model resident between calls: reloading a multi-GB model costs seconds the 8 s budget does not have. */
+    private val keepAlive: String = "30m",
 ) : LlmClient {
     override val name = "ollama:$model"
 
@@ -64,6 +69,7 @@ class OllamaClient(
             put("model", model)
             put("stream", false)
             put("format", "json")
+            put("keep_alive", keepAlive)
             putJsonObject("options") { put("temperature", 0); put("num_predict", req.maxTokens) }
             putJsonArray("messages") {
                 add(buildJsonObject { put("role", "system"); put("content", req.system) })

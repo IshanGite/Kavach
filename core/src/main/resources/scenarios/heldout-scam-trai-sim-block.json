@@ -1,0 +1,49 @@
+{
+  "id": "heldout-scam-trai-sim-block",
+  "kind": "scam",
+  "description": "TRAI says the SIM will be disconnected for illegal ads, hands over to 'cyber police', demands a refundable deposit.",
+  "events": [
+    {
+      "t": 0,
+      "type": "call_started",
+      "number": "+91 98765 11223",
+      "in_contacts": false
+    },
+    {
+      "t": 4,
+      "type": "transcript",
+      "text": "This is the Telecom Authority. Your mobile number will be disconnected in two hours because it was used for illegal advertisement and harassing calls.",
+      "speaker": "caller"
+    },
+    {
+      "t": 30,
+      "type": "transcript",
+      "text": "I am connecting you to the Mumbai cyber police officer. Please do not disconnect, the matter is sensitive and you should not discuss it with anybody.",
+      "speaker": "caller"
+    },
+    {
+      "t": 60,
+      "type": "transcript",
+      "text": "To avoid legal action you must deposit a refundable security amount of twenty five thousand rupees, it will be returned after verification.",
+      "speaker": "caller"
+    },
+    {
+      "t": 90,
+      "type": "payment",
+      "app": "PhonePe",
+      "stage": "opened"
+    },
+    {
+      "t": 98,
+      "type": "payment",
+      "app": "PhonePe",
+      "stage": "amount_entered",
+      "amount": 25000,
+      "payee": "Telecom Verification Desk"
+    }
+  ],
+  "expect": {
+    "min_tier": 2,
+    "min_tier_at_payment": 2
+  }
+}

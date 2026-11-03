@@ -6,6 +6,9 @@ import com.kavach.core.text.Extractors
 
 data class TimelineEntry(val atMs: Long, val label: String)
 
+/** A payee that appeared on a pay screen, with the largest amount seen for it. Device-level, survives sessions. */
+data class PayeeAttempt(val payee: String, val atMs: Long, val amountRupees: Double?)
+
 /** Where the current payment intent came from. */
 enum class IntentKind { PAYMENT_APP, COLLECT_REQUEST }
 
@@ -23,6 +26,7 @@ data class SessionState(
     // device level (survive across sessions)
     val remoteAccessApps: Set<String> = emptySet(),
     val smsFlaggedAtMs: Long? = null,
+    val payeeAttempts: List<PayeeAttempt> = emptyList(),
     // transcript and what was spoken
     val transcript: List<TranscriptChunk> = emptyList(),
     val spokenPayees: Set<String> = emptySet(),
@@ -71,6 +75,7 @@ data class SessionState(
             nowMs = atMs,
             remoteAccessApps = previous?.remoteAccessApps ?: emptySet(),
             smsFlaggedAtMs = previous?.smsFlaggedAtMs,
+            payeeAttempts = previous?.payeeAttempts ?: emptyList(),
         )
     }
 }
@@ -123,7 +128,7 @@ fun SessionState.reduce(e: KavachEvent, cfg: RiskConfig, isScamNumber: (String) 
                 .log(e.atMs, "Debit alert ₹${e.amountRupees.toLong()}") else s
         is PaymentIntent -> {
             val merged = mergeIntent(s.intent, e)
-            s.copy(intent = merged, intentKind = IntentKind.PAYMENT_APP, intentAtMs = e.atMs)
+            s.copy(intent = merged, intentKind = IntentKind.PAYMENT_APP, intentAtMs = e.atMs, payeeAttempts = s.payeeAttempts.withAttempt(merged, e.atMs))
                 .log(e.atMs, "${e.app} ${e.stage.name.lowercase().replace('_', ' ')}" +
                     (merged.payee?.let { " payee=$it" } ?: "") + (merged.amountRupees?.let { " amount=₹${it.toLong()}" } ?: ""))
         }
@@ -139,6 +144,15 @@ fun SessionState.reduce(e: KavachEvent, cfg: RiskConfig, isScamNumber: (String) 
     }
 }
 
+private fun List<PayeeAttempt>.withAttempt(intent: PaymentIntent, atMs: Long): List<PayeeAttempt> {
+    val payee = intent.payee?.takeIf { it.isNotBlank() } ?: return this
+    if (intent.stage == PayStage.OPENED) return this
+    val key = Extractors.normalizePayee(payee)
+    val old = firstOrNull { Extractors.normalizePayee(it.payee) == key }
+    val amount = listOfNotNull(old?.amountRupees, intent.amountRupees).maxOrNull()
+    return (filterNot { it === old } + PayeeAttempt(payee, atMs, amount)).takeLast(30)
+}
+
 /** A later stage of the same payment keeps the amount/payee read earlier if the new frame lost them. */
 private fun mergeIntent(old: PaymentIntent?, new: PaymentIntent): PaymentIntent {
     if (old == null || old.app != new.app) return new
@@ -152,7 +166,8 @@ private fun mergeIntent(old: PaymentIntent?, new: PaymentIntent): PaymentIntent 
 private fun SessionState.withFindings(raw: TacticsFindings, cfg: RiskConfig): SessionState {
     val haystack = Extractors.normalizePayee(transcriptText())
     val quotes = raw.evidenceQuotes.filter { it.isNotBlank() && haystack.contains(Extractors.normalizePayee(it)) }
-    val payees = raw.payeeDetailsMentioned.filter { it.isNotBlank() && haystack.contains(Extractors.normalizePayee(it)) }
+    // Only UPI IDs / account numbers count as payee evidence; names are said aloud on innocent calls all the time.
+    val payees = raw.payeeDetailsMentioned.filter { it.isNotBlank() && Extractors.isPayeeIdentifier(it) && haystack.contains(Extractors.normalizePayee(it)) }
     val clean = raw.copy(evidenceQuotes = quotes, payeeDetailsMentioned = payees, llmRisk = raw.llmRisk.coerceIn(0, 100))
     val history = (findings + clean).takeLast(maxOf(1, cfg.languageSmoothingRuns))
     return copy(

@@ -1,0 +1,43 @@
+{
+  "id": "heldout-scam-rbi-holding-account",
+  "kind": "scam",
+  "description": "'Your funds are at risk': move savings to an RBI holding account for audit, returned in 24 hours.",
+  "events": [
+    {
+      "t": 0,
+      "type": "call_started",
+      "number": "+91 98765 11223",
+      "in_contacts": false
+    },
+    {
+      "t": 5,
+      "type": "transcript",
+      "text": "Sir, our monitoring shows your savings are at risk from a money laundering network, this is the Reserve Bank enforcement cell.",
+      "speaker": "caller"
+    },
+    {
+      "t": 35,
+      "type": "transcript",
+      "text": "For the audit you have to move your balance to the RBI secure holding account. It will be returned within twenty four hours. Keep this confidential.",
+      "speaker": "caller"
+    },
+    {
+      "t": 70,
+      "type": "payment",
+      "app": "PhonePe",
+      "stage": "opened"
+    },
+    {
+      "t": 80,
+      "type": "payment",
+      "app": "PhonePe",
+      "stage": "amount_entered",
+      "amount": 300000,
+      "payee": "RBI Holding Account 4410229981"
+    }
+  ],
+  "expect": {
+    "min_tier": 2,
+    "min_tier_at_payment": 2
+  }
+}

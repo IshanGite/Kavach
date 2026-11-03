@@ -31,6 +31,18 @@ it showed a problem, we changed behaviour and recorded why here. **If you change
 | 19 | **No cloud speech-to-text.** | The spec lists a Groq/OpenAI Whisper fallback, but that uploads raw call audio, which contradicts the spec's own privacy rule ("never raw audio"). The companion laptop is the sanctioned fallback. |
 | 20 | **VoIP detection is a UI-text heuristic,** with an ongoing-call notification check for call end. | No public API for third-party VoIP calls. Documented as fragile; tune on the demo phone. |
 
+### Refinement round (after the first held-out test)
+
+| # | Decision | Why |
+|---|---|---|
+| 21 | **Held-out test, honestly reported.** 12 unseen scam scripts and 8 unseen normal scripts were written in different wording and run BEFORE tuning: the rule-based language layer alone caught **6 of 12 scams** (0 of 8 false positives). | Our own scenarios were partly fitted by our own lexicon. The first-run number is the real one. After tuning those 20 are **burned for tuning**: they are now regression tests. A fresh held-out set from someone outside the team is the next honest test. |
+| 22 | **Lexicon covers vocabulary classes, not phrases** (`re:` patterns for "transfer|send|move ... account|balance|fee", "do not discuss|disclose|tell ... anyone|family", "install ... app", blackmail threats). | The misses were whole classes (holding account, "do not discuss with anybody", sextortion, "move your balance"). |
+| 23 | **Asking for an OTP, PIN or remote-access app on a call is +25** (was +15), but a sentence that talks *about* what others might ask ("if anyone asks you to install an app", "beware of fraudsters") is advice, not a request. | Needed for "approve my request and enter your PIN" and for OTP-pretext scams. The exemption stops a genuine bank awareness call from nudging. It only exempts the sentence, so a scammer's real request in another sentence still counts (tested). |
+| 24 | **Per-payee amount baseline.** Once a payee has 2+ payments, "above usual" compares with that payee's own median. | Paying the landlord the usual 18,000 is not unusual even though the global median is 200. |
+| 25 | **Repeated-new-payee rule** (+20 for a 2nd+ distinct never-paid payee within 24 h, +10 if the amount escalates and is above usual). Closes the investment/task-scam known gap. | Those scams drip money to new accounts with no call. Normal market shopping (small, non-escalating) stays at most a nudge (pinned by a scenario). |
+| 26 | **Compact prompt is the app default** (one few-shot, about a third of the tokens), plus `keep_alive` and a warm-up request. | Full prompt measured median 8.7 s / p90 10.9 s on a laptop, over the 8 s budget. Prompt evaluation dominates on a phone CPU. |
+| 27 | **Bank-side signal** (`BankSignal`): risk, tier, signal categories, recommended bank action. No numbers, names, transcript or amounts (tested). | Makes the roadmap pitch concrete and keeps the privacy story intact. |
+
 ## Things the evals taught us (worth saying in the pitch)
 
 * **The saved-payee guard is a backstop, not a workhorse.** With the spec weights, a no-call payment can reach at most ~25 context
@@ -47,10 +59,8 @@ it showed a problem, we changed behaviour and recorded why here. **If you change
 
 ## Known gaps (on the scorecard, not hidden)
 
-* **Investment / Telegram-task scams with no live call** (`scam-investment-telegram-tasks`). Needs a repeated-new-payee and
-  escalating-deposit rule. Roadmap item.
-* **Per-payee amount baseline.** "3x median" uses the global median; paying a saved family member their usual amount can add
-  10 points. Harmless today (guards keep it at tier 0) but should be per-payee.
+* **Voice-clone detection** is a weak signal on phone-line audio, and there is no spoof model yet (weight is 0 when absent).
+* **Scam-script fingerprints** (embedding similarity to known scripts) from the spec's innovation list: not built.
 * **ASR and phone-audio realism.** Evals feed clean text. Real Whisper output on speakerphone audio will be noisier; the
   keyword lexicon was written by the same people who wrote the scenarios, so treat the 17/17 as a regression gate, not as accuracy.
   Add held-out scenarios written by someone who has not seen the lexicon.

@@ -1,0 +1,33 @@
+{
+  "id": "heldout-normal-genuine-bank-awareness-call",
+  "kind": "normal",
+  "description": "Real bank awareness call that WARNS never to share OTP or PIN. Must not read as an OTP request.",
+  "events": [
+    {
+      "t": 0,
+      "type": "call_started",
+      "number": "+91 80444 22110",
+      "in_contacts": false
+    },
+    {
+      "t": 4,
+      "type": "transcript",
+      "text": "Hello sir, this is a courtesy call from your bank to remind you never to share your OTP, PIN or card number with anyone, even bank staff.",
+      "speaker": "caller"
+    },
+    {
+      "t": 30,
+      "type": "transcript",
+      "text": "If anyone asks you to install any app or share a code, please disconnect and call our official number. Thank you and have a nice day.",
+      "speaker": "caller"
+    },
+    {
+      "t": 60,
+      "type": "call_ended",
+      "duration": 60
+    }
+  ],
+  "expect": {
+    "max_tier": 0
+  }
+}

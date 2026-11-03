@@ -86,11 +86,22 @@ object Extractors {
      * Does the payee shown on the pay screen match something that was spoken on the call?
      * A near-certain coercion link: the scammer dictated the destination.
      */
+    /**
+     * Only a UPI ID or a bank account number is strong evidence that a payee was dictated. A business or person's NAME ("Sunrise Clinic")
+     * is routinely said aloud on perfectly legitimate calls, so it must never trigger the "payee came from the call" override.
+     */
+    fun isPayeeIdentifier(raw: String): Boolean {
+        val t = normalizePayee(raw)
+        if (t.contains('@')) return UPI_WRITTEN.matches(t)
+        val digits = t.filter { it.isDigit() }
+        return digits.length in 9..18 && t.all { it.isDigit() || it.isWhitespace() || it == '-' }
+    }
+
     fun payeeMatchesSpoken(payeeOnScreen: String?, spoken: Collection<String>): Boolean {
         if (payeeOnScreen.isNullOrBlank() || spoken.isEmpty()) return false
         val screen = normalizePayee(payeeOnScreen)
         val screenDigits = screen.filter(Char::isDigit)
-        return spoken.any { s ->
+        return spoken.filter(::isPayeeIdentifier).any { s ->
             val sp = normalizePayee(s)
             when {
                 sp.isEmpty() -> false

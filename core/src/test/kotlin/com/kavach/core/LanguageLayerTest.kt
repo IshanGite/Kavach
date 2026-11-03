@@ -175,9 +175,27 @@ class AnalystsTest {
     }
 
     @Test
-    fun `llm can still raise the score above the keywords`() = runBlocking {
-        val high = """{"tactics":{"authority_impersonation":1},"scam_type":"digital_arrest","llm_risk":99}"""
-        assertEquals(99, hybrid(high).analyze(req("Hello how are you")).llmRisk)
+    fun `an alarm the rules cannot corroborate is bounded, an llm cannot invent coercion`() = runBlocking {
+        val invented = """{"tactics":{"authority_impersonation":1,"threat_of_arrest_or_legal_action":1},"scam_type":"digital_arrest","llm_risk":99}"""
+        val f = hybrid(invented).analyze(req("Hello how are you"))
+        assertTrue(f.llmRisk < 35, "uncorroborated risk must stay below the nudge line, got ${f.llmRisk}")
+        assertTrue(f.tactics.authorityImpersonation <= 0.4)
+    }
+
+    @Test
+    fun `regression for the measured hallucination - a 4B model answered risk 75 for an electrician asking for 800 rupees`() = runBlocking {
+        val hallucinated = """{"id":"none","t":[0.8,0.8,0.5,0,0,0,0],"type":"none","risk":75,"q":["800 rupaye hue hain"],"p":[""]}"""
+        val f = hybrid(hallucinated).analyze(req("Sir kaam ho gaya hai, switch board change kar diya, 800 rupaye hue hain, QR se de dijiye."))
+        assertTrue(f.llmRisk < 35, "benign money talk must not read as coercion, got ${f.llmRisk}")
+    }
+
+    @Test
+    fun `when the rules corroborate, the llm can still sharpen the score above the keywords`() = runBlocking {
+        val text = "You will be arrested if you do not send money to this account today"
+        val kw = KeywordAnalyst.analyze(text).llmRisk
+        val high = """{"id":"police","t":[0.9,1,0.9,0.7,1,0,0],"type":"digital_arrest","risk":99}"""
+        val f = hybrid(high).analyze(req(text))
+        assertTrue(f.llmRisk > kw, "llm ${f.llmRisk} should sharpen keyword $kw"); assertTrue(f.llmRisk <= 99)
     }
 
     @Test

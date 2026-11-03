@@ -1,0 +1,27 @@
+{
+  "id": "heldout-normal-genuine-refund-call",
+  "kind": "normal",
+  "description": "Merchant support calls to say a refund was processed to the original method. No payment, no request.",
+  "events": [
+    {
+      "t": 0,
+      "type": "call_started",
+      "number": "+91 80555 66000",
+      "in_contacts": false
+    },
+    {
+      "t": 4,
+      "type": "transcript",
+      "text": "Hello, this is Amazon customer support, your refund of four hundred ninety nine rupees has been processed to your original payment method, it will show in three to five days.",
+      "speaker": "caller"
+    },
+    {
+      "t": 50,
+      "type": "call_ended",
+      "duration": 50
+    }
+  ],
+  "expect": {
+    "max_tier": 1
+  }
+}

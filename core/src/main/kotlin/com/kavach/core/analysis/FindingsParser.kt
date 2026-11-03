@@ -32,12 +32,21 @@ object FindingsParser {
 
     private fun unit(v: Double?): Double = (v ?: 0.0).let { if (it.isNaN()) 0.0 else it }.coerceIn(0.0, 1.0)
 
+    /** Terse schema: "t":[authority,threat,urgency,secrecy,payment,otp_or_remote,emotional]. */
+    private fun terseTactics(a: JsonArray): Tactics? {
+        if (a.size < 7) return null
+        val v = a.map { unit((it as? JsonPrimitive)?.let { p -> p.doubleOrNull ?: p.contentOrNull?.toDoubleOrNull() }) }
+        return Tactics(v[0], v[1], v[2], v[3], v[4], v[5], v[6])
+    }
+
     fun parseFindings(raw: String, source: String): TacticsFindings? {
         val obj = extractJsonObject(raw) ?: return null
+        val terse = (obj["t"] as? JsonArray)?.let(::terseTactics)
         val t = obj["tactics"] as? JsonObject
+        val riskKey = if (obj["llm_risk"] != null) "llm_risk" else "risk"
         // A response with neither tactics nor a risk number is not an analysis.
-        if (t == null && obj.num("llm_risk") == null) return null
-        val tactics = Tactics(
+        if (t == null && terse == null && obj.num(riskKey) == null) return null
+        val tactics = terse ?: Tactics(
             authorityImpersonation = unit(t?.num("authority_impersonation")),
             threatOfArrestOrLegalAction = unit(t?.num("threat_of_arrest_or_legal_action")),
             urgencyOrDeadline = unit(t?.num("urgency_or_deadline")),
@@ -47,14 +56,14 @@ object FindingsParser {
             emotionalEmergency = unit(t?.num("emotional_emergency")),
         )
         // Models sometimes answer on a 0..1 scale despite the prompt; a value strictly between 0 and 1 is a fraction.
-        val risk = obj.num("llm_risk")?.let { if (it > 0.0 && it < 1.0) it * 100 else it }
+        val risk = obj.num(riskKey)?.let { if (it > 0.0 && it < 1.0) it * 100 else it }
         return TacticsFindings(
-            claimedIdentity = ClaimedIdentity.parse(obj.str("claimed_identity")),
+            claimedIdentity = ClaimedIdentity.parse(obj.str("claimed_identity") ?: obj.str("id")),
             tactics = tactics,
-            scamType = ScamType.parse(obj.str("scam_type")),
+            scamType = ScamType.parse(obj.str("scam_type") ?: obj.str("type")),
             llmRisk = (risk ?: 0.0).let { if (it.isNaN()) 0.0 else it }.coerceIn(0.0, 100.0).toInt(),
-            evidenceQuotes = obj.strings("evidence_quotes").take(8),
-            payeeDetailsMentioned = obj.strings("payee_details_mentioned").take(8),
+            evidenceQuotes = (if (obj["evidence_quotes"] != null) obj.strings("evidence_quotes") else obj.strings("q")).take(8),
+            payeeDetailsMentioned = (if (obj["payee_details_mentioned"] != null) obj.strings("payee_details_mentioned") else obj.strings("p")).take(8),
             source = source,
         )
     }

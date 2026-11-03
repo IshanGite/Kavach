@@ -31,6 +31,8 @@ data class SettingsState(
     val ollamaUrl: String = "http://127.0.0.1:11434",
     val ollamaModel: String = "gemma3:4b",
     val llmTimeoutMs: Long = 8_000,
+    /** One few-shot instead of three: faster on a phone CPU. */
+    val compactPrompt: Boolean = true,
     val speakNudges: Boolean = false,
     val protectionEnabled: Boolean = false,
     /** VOICE_RECOGNITION | MIC | CAMCORDER | UNPROCESSED. Set from the Day-0 audio test result. */

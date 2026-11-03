@@ -1,0 +1,50 @@
+{
+  "id": "heldout-scam-skype-obscene-video-case",
+  "kind": "scam",
+  "description": "Skype 'interrogation': fake obscene-video case, move to Skype, stay available, warrant.",
+  "events": [
+    {
+      "t": 0,
+      "type": "call_started",
+      "number": "+91 98765 11223",
+      "in_contacts": false,
+      "channel": "voip"
+    },
+    {
+      "t": 5,
+      "type": "transcript",
+      "text": "A case has been registered against your number for sharing obscene videos. We are sending the warrant to your address by evening.",
+      "speaker": "caller"
+    },
+    {
+      "t": 40,
+      "type": "transcript",
+      "text": "You need to remain on this video call until the officer verifies your statement. Switching off the camera or telling relatives will make the case worse.",
+      "speaker": "caller"
+    },
+    {
+      "t": 90,
+      "type": "transcript",
+      "text": "Pay the bail guarantee into the court account, the details are on your screen, you will get the full amount back.",
+      "speaker": "caller"
+    },
+    {
+      "t": 130,
+      "type": "payment",
+      "app": "PhonePe",
+      "stage": "opened"
+    },
+    {
+      "t": 140,
+      "type": "payment",
+      "app": "PhonePe",
+      "stage": "amount_entered",
+      "amount": 60000,
+      "payee": "Court Guarantee Fund"
+    }
+  ],
+  "expect": {
+    "min_tier": 2,
+    "min_tier_at_payment": 2
+  }
+}

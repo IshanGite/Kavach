@@ -1,0 +1,36 @@
+{
+  "id": "heldout-normal-school-fee-call-live",
+  "kind": "normal",
+  "description": "School office (unknown number) calls about the fee; the user pays through the app while still on the line.",
+  "events": [
+    {
+      "t": 0,
+      "type": "call_started",
+      "number": "+91 80333 11000",
+      "in_contacts": false
+    },
+    {
+      "t": 4,
+      "type": "transcript",
+      "text": "Good morning, this is the school accounts office, the second term fee of fifteen thousand is pending, last date is the tenth, you can pay through the parent app.",
+      "speaker": "caller"
+    },
+    {
+      "t": 60,
+      "type": "payment",
+      "app": "Google Pay",
+      "stage": "opened"
+    },
+    {
+      "t": 70,
+      "type": "payment",
+      "app": "Google Pay",
+      "stage": "amount_entered",
+      "amount": 15000,
+      "payee": "Greenfield School Fees"
+    }
+  ],
+  "expect": {
+    "max_tier": 1
+  }
+}

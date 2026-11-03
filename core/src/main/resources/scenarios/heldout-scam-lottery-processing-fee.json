@@ -1,0 +1,43 @@
+{
+  "id": "heldout-scam-lottery-processing-fee",
+  "kind": "scam",
+  "description": "Prize-money scam: no authority or threat, just 'pay the processing fee to release the amount'.",
+  "events": [
+    {
+      "t": 0,
+      "type": "call_started",
+      "number": "+91 90909 12121",
+      "in_contacts": false
+    },
+    {
+      "t": 4,
+      "type": "transcript",
+      "text": "Congratulations madam, you have won twenty five lakh rupees in our lucky draw. To release the prize amount you have to pay a processing fee.",
+      "speaker": "caller"
+    },
+    {
+      "t": 30,
+      "type": "transcript",
+      "text": "The fee is twelve thousand five hundred rupees only, send it to our manager's UPI id, lucky dot desk at ybl, and the money will be credited today.",
+      "speaker": "caller"
+    },
+    {
+      "t": 60,
+      "type": "payment",
+      "app": "PhonePe",
+      "stage": "opened"
+    },
+    {
+      "t": 70,
+      "type": "payment",
+      "app": "PhonePe",
+      "stage": "amount_entered",
+      "amount": 12500,
+      "payee": "lucky.desk@ybl"
+    }
+  ],
+  "expect": {
+    "min_tier": 2,
+    "min_tier_at_payment": 2
+  }
+}

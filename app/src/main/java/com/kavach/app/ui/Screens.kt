@@ -93,6 +93,7 @@ fun SettingsScreen() {
             Field("Ollama URL (on-device or via adb reverse)", s.ollamaUrl, { n -> up { it.copy(ollamaUrl = n.trim()) } })
             Field("Model", s.ollamaModel, { n -> up { it.copy(ollamaModel = n.trim()) } })
             Field("Local timeout (ms) before falling back", s.llmTimeoutMs.toString(), { n -> n.toLongOrNull()?.let { v -> up { it.copy(llmTimeoutMs = v.coerceIn(1000, 60000)) } } })
+            ToggleRow("Compact prompt (faster)", s.compactPrompt, { v -> up { it.copy(compactPrompt = v) } }, "One example instead of three: about a third of the tokens. Turn off if the small model gets less accurate.")
             ToggleRow("Allow cloud fallback", s.cloudEnabled, { v -> up { it.copy(cloudEnabled = v) } }, "OFF by default. Sends ONLY the short transcript text, never audio or numbers.")
             Field("Cloud API key (stays on this phone)", s.cloudApiKey, { n -> up { it.copy(cloudApiKey = n.trim()) } }, password = true)
         }
