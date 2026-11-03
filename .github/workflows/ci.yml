@@ -49,18 +49,24 @@ jobs:
     name: Android build and lint
     runs-on: ubuntu-latest
     timeout-minutes: 25
-    if: ${{ hashFiles('app/build.gradle.kts') != '' }}
     steps:
       - uses: actions/checkout@v4
+      - name: Detect app module
+        id: detect
+        run: |
+          if [ -f app/build.gradle.kts ]; then echo "has_app=true" >> "$GITHUB_OUTPUT"; else echo "has_app=false" >> "$GITHUB_OUTPUT"; echo "No :app module yet, skipping."; fi
       - uses: actions/setup-java@v4
+        if: steps.detect.outputs.has_app == 'true'
         with:
           distribution: temurin
           java-version: 17
       - uses: gradle/actions/setup-gradle@v4
+        if: steps.detect.outputs.has_app == 'true'
       - name: Assemble debug, lint, app unit tests
+        if: steps.detect.outputs.has_app == 'true'
         run: ./gradlew :app:assembleDebug :app:lintDebug :app:testDebugUnitTest --console=plain
       - name: Upload lint report
-        if: always()
+        if: always() && steps.detect.outputs.has_app == 'true'
         uses: actions/upload-artifact@v4
         with:
           name: kavach-android-lint
