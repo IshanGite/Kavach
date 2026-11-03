@@ -20,6 +20,7 @@ import com.kavach.app.audio.preferModelId
 import com.kavach.app.engine.*
 import com.kavach.app.sense.VoipCallDetector
 import com.kavach.app.ui.OverlayController
+import com.kavach.app.ui.WidgetController
 import com.kavach.core.baseline.PastPayment
 import com.kavach.core.config.AppConfig
 import com.kavach.core.model.CallEnded
@@ -76,8 +77,13 @@ class Container(val app: Application) {
     val audio = AudioCaptureController(app, live, settings, audioLevelDb) { asr }
     val companion = CompanionServer(settings, live)
 
-    /** Latest throw-away engine from the Simulate screen. */
+    /** Latest throw-away engine from the Simulate screen. The widget follows this while it is non-null. */
     @Volatile var sim: KavachEngine? = null
+
+    /** Shield bubble. Created on first use so a process that never turns protection on does not add a window. */
+    val widget: WidgetController by lazy {
+        WidgetController(app, overlay, settings, live = { live }, sim = { sim })
+    }
 
     fun newSimEngine(simClock: () -> Long): KavachEngine {
         sim?.stop()
@@ -205,6 +211,7 @@ class KavachService : Service() {
             ServiceCompat.startForeground(this, Notifier.NOTIF_SERVICE, c.notifier.serviceNotification(), ServiceInfo.FOREGROUND_SERVICE_TYPE_SPECIAL_USE)
         }
         if (c.settings.state.value.companionEnabled) c.companion.start()
+        c.widget.start()
         c.live.warmUpModel()
         c.live.note("Protection ON")
         return START_STICKY
@@ -212,7 +219,7 @@ class KavachService : Service() {
 
     override fun onDestroy() {
         val c = container()
-        c.audio.stop(); c.companion.stop(); c.overlay.dismiss()
+        c.audio.stop(); c.companion.stop(); c.widget.stop(); c.overlay.dismiss()
         c.live.note("Protection OFF")
         super.onDestroy()
     }

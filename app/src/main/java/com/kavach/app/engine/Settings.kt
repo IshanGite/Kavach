@@ -35,6 +35,8 @@ data class SettingsState(
     val compactPrompt: Boolean = true,
     val speakNudges: Boolean = false,
     val protectionEnabled: Boolean = false,
+    /** Floating shield over other apps. On unless the user turns it off. The bubble never takes taps outside itself. */
+    val showFloatingWidget: Boolean = true,
     /** VOICE_RECOGNITION | MIC | CAMCORDER | UNPROCESSED. Set from the Day-0 audio test result. */
     val audioSource: String = "VOICE_RECOGNITION",
     /** "vosk" (default) or "whisper". Missing Whisper files fall back to Vosk, then no ASR. */

@@ -48,7 +48,18 @@ private class OverlayOwner : LifecycleOwner, SavedStateRegistryOwner {
  * Always called on the main thread (EffectExecutor posts).
  */
 class OverlayController(private val app: Context) {
-    @Volatile var accessibilityContext: Context? = null
+    @Volatile private var accessibilityContextField: Context? = null
+
+    /** Set by the accessibility service. The floating widget listens so it can retarget its window type. */
+    @Volatile var onAccessibilityContextChanged: (() -> Unit)? = null
+
+    var accessibilityContext: Context?
+        get() = accessibilityContextField
+        set(value) {
+            if (accessibilityContextField === value) return
+            accessibilityContextField = value
+            runCatching { onAccessibilityContextChanged?.invoke() }
+        }
 
     private var view: View? = null
     private var owner: OverlayOwner? = null

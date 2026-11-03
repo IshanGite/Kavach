@@ -2,6 +2,8 @@ package com.kavach.app.engine
 
 import com.kavach.core.analysis.HybridMessageClassifier
 import com.kavach.core.analysis.HybridTranscriptAnalyst
+import com.kavach.core.analysis.MessageClassifier
+import com.kavach.core.model.MessageVerdict
 import com.kavach.core.baseline.PaymentBaseline
 import com.kavach.core.config.RiskConfig
 import com.kavach.core.intervention.UserProfile
@@ -91,8 +93,23 @@ class KavachEngine(
         speakNudges = settings.state.value.speakNudges,
     )
     private val scamNumbers = ScamNumbers.loadBundled()
+    private val scamLock = Any()
+    private var scamNotices: List<ScamNotice> = emptyList()
+
+    /** Records scam verdicts for the widget. The tier is still decided only when the verdict re-enters the orchestrator. */
+    private val messages = object : MessageClassifier {
+        private val inner = HybridMessageClassifier(llm)
+        override suspend fun classify(atMs: Long, source: String, text: String): MessageVerdict {
+            val verdict = inner.classify(atMs, source, text)
+            noticeFrom(atMs, source, text, verdict.isScam, verdict.confidence, verdict.reason, verdict.type.name)?.let { incoming ->
+                synchronized(scamLock) { scamNotices = pushNotice(scamNotices, incoming) }
+            }
+            return verdict
+        }
+    }
+
     val runtime = KavachRuntime(
-        orchestrator, HybridTranscriptAnalyst(llm, cfg) { settings.state.value.compactPrompt }, HybridMessageClassifier(llm), scope, clockFn, tickEveryMs,
+        orchestrator, HybridTranscriptAnalyst(llm, cfg) { settings.state.value.compactPrompt }, messages, scope, clockFn, tickEveryMs,
     )
 
     /** Load the model into memory now so the first real analysis during a call is not a cold start. */
@@ -105,6 +122,8 @@ class KavachEngine(
     }
 
     val latest = MutableStateFlow<Decision?>(null)
+    /** What the floating widget draws. Scores and tier are copied from the decision; they are not recomputed here. */
+    val surface = MutableStateFlow(WidgetSurface())
     val log = MutableStateFlow<List<LogEntry>>(emptyList())
     val pauseUntilMs = MutableStateFlow<Long?>(null)
     @Volatile var lastActivityMs: Long = 0
@@ -161,6 +180,33 @@ class KavachEngine(
             )
         }
         if (d.effects.isNotEmpty()) executor.run(this, d.effects)
+        publishSurface(d)
+    }
+
+    private fun publishSurface(d: Decision) {
+        val s = orchestrator.session
+        val call = if (s.callLive) s.call else null
+        val detected = s.transcript.asReversed().firstNotNullOfOrNull { ch ->
+            ch.language.trim().takeIf { it.isNotEmpty() && !it.equals("auto", ignoreCase = true) }
+        }
+        val notices = synchronized(scamLock) { scamNotices }
+        surface.value = WidgetSurface(
+            atMs = d.atMs,
+            callLive = call != null,
+            callerNumber = call?.number,
+            callerInContacts = call?.isInContacts ?: false,
+            callerName = call?.contactName,
+            callStartedAtMs = call?.atMs,
+            detectedLanguage = detected,
+            tierLevel = d.tier.level,
+            contextScore = d.result.contextScore,
+            languageScore = d.result.languageScore,
+            risk = d.result.risk,
+            transcript = s.transcript.takeLast(8).map { TranscriptLine(it.text, it.atMs) },
+            evidenceQuotes = s.evidenceQuotes.takeLast(12),
+            reasons = d.plan?.reasons.orEmpty().take(3),
+            scamNotices = notices,
+        )
     }
 
     private fun append(e: LogEntry) {

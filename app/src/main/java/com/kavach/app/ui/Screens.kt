@@ -91,6 +91,7 @@ fun SettingsScreen() {
             Text("For Vosk, English uses the en-in model and Hindi uses hi. Whisper detects the language itself.", fontSize = 12.sp)
             ToggleRow("Family safe word is set", s.safeWordSet, { v -> up { it.copy(safeWordSet = v) } }, "Only a flag. The word itself is never stored on the phone.")
             ToggleRow("Speak the tier-1 nudge aloud", s.speakNudges, { v -> up { it.copy(speakNudges = v) } }, "Tier 2/3 warnings are always spoken")
+            ToggleRow("Show floating widget", s.showFloatingWidget, { v -> up { it.copy(showFloatingWidget = v) } }, "Shield bubble over other apps while protection is on. It never blocks taps outside itself.")
         }
         ContactEditor("Guardians (get the SMS alert, can reply HOLD)", s.guardians, 2) { l -> up { it.copy(guardians = l) } }
         ContactEditor("Family to call back (the big button)", s.family, 3) { l -> up { it.copy(family = l) } }

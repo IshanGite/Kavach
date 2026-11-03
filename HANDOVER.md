@@ -14,8 +14,8 @@ Phone verification steps: `docs/PHONE_TEST_PLAN.md`.
 
 | | |
 |---|---|
-| Last updated | 2026-11-03 (night), sherpa-onnx Whisper ASR |
-| `main` is | green: 171 core tests; offline evals 31/31 scams paused and 0/25 normal paused (3 nudges); **live gemma3:4b was 27/27 and 0/23 and was not re-run**; security gates pass; APK builds; lint clean |
+| Last updated | 2026-11-04, Guardian floating widget (JVM only) |
+| `main` is | green on this tree: `:core:test` 173 passed; scorecard from that run is 34/34 scams paused, 0/27 normal paused (4 nudges), 61/61 scenarios; **live gemma3:4b was not re-run**; `:app:testDebugUnitTest` 40 passed; APK builds; lint 0 errors, 23 warnings |
 | Held-out honesty | 20 unseen scenarios run BEFORE tuning: rule layer alone caught 6/12 scams. Those 20 are now used up for tuning; **we still need a fresh held-out set from someone outside the team** |
 | Model latency (laptop, gemma3:4b, terse prompt) | median 5.4 s, p90 6.9 s. The phone will be slower; on the phone expect timeouts and rely on the keyword floor. Measure with Pre-flight |
 | App has been run on a real phone? | **Partly.** OnePlus 7 Pro (Android 12): Simulate, Vosk, and Whisper-base (this session, speaker playback into the mic, not an in-call capture). In-call mic (T2), GPay amount/payee, guardian SMS and Hindi TTS are still unverified. |
@@ -33,6 +33,7 @@ Legend: ✅ built and tested on the laptop · 🟡 built, compiles, **untested o
 | Scenario simulator + 54 scenarios + scorecard | ✅ | `core/.../sim`, `resources/scenarios` | Drives CI evals and the in-app Simulate screen |
 | Call-state tracker, screen parser, app config | ✅ | `core/.../sense`, `config` | Unit-tested logic; the Android glue around it is 🟡 |
 | Overlay UI (nudge banner, pause screen, timer, 3 questions) | 🟡 | `app/.../ui/OverlayUi.kt`, `OverlayController.kt` | Hindi + English. Accessibility-overlay window with app-overlay fallback |
+| **Guardian floating widget** (collapsed shield, live card, scam alerts, history) | 🟡 | `app/.../ui/GuardianWidget.kt`, `WidgetMapper.kt`, `WidgetController.kt` | Settings “Show floating widget” defaults ON. Mapping rules have JVM tests. Not drawn on a device. Does not change tiers; tier 2/3 with a payment intent still uses the full-screen pause |
 | **Live view** (gauge, highlighted transcript, rule chips, bank-signal JSON) for the judges' screen | 🟡 | `app/.../ui/LiveScreen.kt` | Mirror with scrcpy |
 | **Pre-flight check** (real overlay, speech and model tests) | 🟡 | `app/.../ui/PreflightScreen.kt` | Run at T-15 min |
 | Repeated-new-payee rule, per-payee baseline, bank-side signal, LLM grounding, terse prompt | ✅ | `core/.../risk`, `analysis`, `llm` | Decisions 21-31 |
@@ -54,13 +55,12 @@ Legend: ✅ built and tested on the laptop · 🟡 built, compiles, **untested o
 
 ## What is verified vs not
 
-**Verified (laptop):** all `core` behaviour, 56 scenarios (scorecard 31/31 scams paused, 0/25 normal paused), fuzzed invariants, repo security gates (secrets, audio files, cleartext HTTP, logging, manifest
-permissions/exported/backup), APK assembles with Vosk + sherpa-onnx native libs, Android lint passes, companion script talks to a mock server.
-Vosk model-folder resolution and Whisper file layout have JVM unit tests.
+**Verified (laptop):** all `core` behaviour. This session’s `:core:test` wrote `core/build/reports/kavach-eval/scorecard.md`: 34/34 scams paused, 0/27 normal paused, 61/61 scenarios. Fuzzed invariants and repo security gates (secrets, audio files, cleartext HTTP, logging, manifest permissions/exported/backup) passed in that same run. APK assembles with Vosk + sherpa-onnx native libs. Android lint: 0 errors, 23 warnings. The companion script was not re-run this session.
+Vosk model-folder resolution, Whisper file layout, and the floating-widget mapping rules (`WidgetMapperTest`, 17 tests) have JVM unit tests. Settings JSON without `showFloatingWidget` still decodes with the switch ON.
 
 **Verified on the OnePlus 7 Pro (speaker into the mic, injected unknown call, not an in-call capture):** Whisper-base int8, 4 threads, decoded 5.0 s windows in 381–1327 ms. Home showed `ASR: whisper (detected: hi)`. Tiny was not needed.
 
-**NOT verified:** overlay drawing over a UPI app, accessibility node text of GPay/PhonePe, PHONE_STATE number delivery, mic during a real call (T2), TTS Hindi voice, SMS sending, foreground-service survival, Android 14 microphone-FGS rules.
+**NOT verified:** overlay drawing over a UPI app, the floating widget on a real screen (bubble, drag, expand, coexistence with the pause screen), accessibility node text of GPay/PhonePe, PHONE_STATE number delivery, mic during a real call (T2), TTS Hindi voice, SMS sending, foreground-service survival, Android 14 microphone-FGS rules.
 
 ## Next actions
 
@@ -70,6 +70,7 @@ Vosk model-folder resolution and Whisper file layout have JVM unit tests.
    App info > ⋮ > *Allow restricted settings* or the Accessibility/Notification-access toggles are greyed out. Done when Home shows all ✅.
 2. **Run Simulate** (10 min). Home > Simulate > play `scam-digital-arrest-english-demo` at 4x. Done when the amber/red pause screen appears with
    reasons, timer and questions, speech is audible, and the Sim log shows a dry-run guardian SMS. This proves overlay + TTS + engine on the device.
+   With Protection ON and “Show floating widget” ON (the default), the shield bubble should sit over other apps, expand on an unknown call or a scam-looking notification, and shrink to a bubble while the full-screen pause is up. The pause must still appear before the PIN. Done when that is seen; the widget has no device run yet.
 3. **Day-0 audio test** (30 min, **do this early**, it decides the architecture). Home > Audio test with a normal call on speaker, then a WhatsApp call.
    Record the verdicts in the table at the bottom of `docs/PHONE_TEST_PLAN.md` and set the winning source in Settings. If every source is SILENT, use option C (laptop companion) and tell Ishan.
 4. **Real payment screen tuning** (1-2 h). With the accessibility service on, open GPay / PhonePe to the pay screen for a *test* contact (do not complete a payment).
@@ -107,6 +108,8 @@ Vosk model-folder resolution and Whisper file layout have JVM unit tests.
 | Local LLM too slow on the phone | 8 s timeout, keyword analyst keeps working, `gemma3:1b`, cloud fallback (off by default) |
 | VoIP call detection is text-heuristic | Tune `VoipCallDetector`; the scammer-on-WhatsApp demo variant may need a manual `Debug > Unknown call` |
 | OEM kills background services (Xiaomi, OnePlus, Samsung) | Battery exemption, autostart permission, lock the app in recents |
+| Floating widget window is untested on a device. A mis-sized window would eat taps outside the card. | The window is a fixed 72 dp bubble or a 308×440 dp card (capped to 62% of the screen), with `FLAG_NOT_FOCUSABLE` and `FLAG_NOT_TOUCH_MODAL`, and never `FLAG_NOT_TOUCHABLE` or `MATCH_PARENT`. While the pause overlay is showing at tier 2+, the mapper forces the bubble. |
+| Widget hooks sit in `Screens.kt` (one settings row) and `OverlayController.kt` (accessibility-context callback). A UI restyle of those files will conflict there. | Keep the settings row and the callback; do not fold the widget into `OverlayUi.kt`. |
 | Hindi TTS voice missing | Falls back to English; install the Hindi voice in system settings |
 | API key is stored in app-private prefs (not encrypted) | Fine for a hackathon phone; do not reuse a real key |
 | `Settings > Companion` token is sent over plain HTTP | Use `adb forward` (USB), not Wi-Fi |
@@ -129,6 +132,7 @@ Vosk model-folder resolution and Whisper file layout have JVM unit tests.
 
 - **2026-11-03 night (UI overhaul):** Visual pass on the Compose screens only. Home is a protection hero, C/L/R meter and tier chip (Safe / Watching / Caution / Danger), on-device status chips, and a compact readiness list. Pause and nudge keep the same actions, timer, questions and labels, with larger type, 56dp targets, a countdown ring and darker amber so white text clears WCAG AA. Light and dark themes, edge-to-edge. `SimPlayer` and `core/` untouched. `:core:test`, `:app:testDebugUnitTest` (22), `:app:assembleDebug` and `:app:lintDebug` passed (0 errors, 38 warnings). Not installed on a device; Compose previews were not rendered.
 - **2026-11-04 (Kavach Pay):** Mock UPI screen inside the app (`ui/KavachPay.kt`, `ui/KavachPayScreen.kt`), Home entry "Kavach Pay (demo payment app)". Pay emits live `PaymentIntent` OPENED then AMOUNT_ENTERED (payee rides on that stage; there is no `PAYEE_ENTERED`). Tier 2+ uses the existing pause overlay before a mock PIN that keeps only a length. Role-play normal / coerced injects into `c.live`. Coerced (unknown call + dictated `verify.pay@oksbi` + ₹50,000) reaches a pause on an empty baseline through `Orchestrator` and `KavachRuntime` before any PIN event. `:core:test`, `:app:testDebugUnitTest` (27, including 5 new), `:app:assembleDebug`, `:app:lintDebug` passed. Not installed on a phone. A tier 3 pause waits 120s and can text saved guardians. Completing a simulated payment records it on the baseline.
+- **2026-11-04 (Guardian widget):** Floating shield while Protection is ON. Collapsed bubble in normal life; expands for an unknown live call, a scam-looking notification (classifier confidence ≥ 0.5), or a tier rise. Live card shows caller, engine tier and C/L/R, last three transcript lines with evidence quotes marked, planner reasons, Call 1930 (dialer), Call family, Dismiss, Collapse, and a recent-alerts list (8). The widget does not compute tiers. Tier 2/3 with the pause overlay showing forces the bubble so the full-screen pause stays usable. Settings “Show floating widget” defaults ON; old settings JSON without the field stays ON. `:core:test` 173 passed (scorecard 34/34 scams paused, 0/27 normal paused, 61/61). `:app:testDebugUnitTest` 40 passed, including `WidgetMapperTest` (17). `:app:assembleDebug` and `:app:lintDebug` passed (0 errors, 23 warnings). Nothing ran on a device, and this was not committed. Next: Om’s phone step 2, including the bubble/expand/pause check above.
 
 - **2026-11-03 night (sherpa-onnx Whisper):** Second `AsrEngine` beside Vosk. Settings > Audio chooses Vosk (default) or Whisper. Whisper is sherpa-onnx 2.0.1 (AAR in `app/libs`, 47 MB, not gitignored), int8 base, 4 threads, `language=""`. Models live in `getExternalFilesDir(null)/sherpa-whisper/` and are not in git (`scripts/fetch-sherpa-onnx.sh`). Missing files fall back to Vosk, then Noop. `:core:test` 171 passed, scorecard 31/31 scams paused and 0/25 normal paused. `:app:testDebugUnitTest` passed (22 tests, including Whisper path tests). `:app:assembleDebug` and `:app:lintDebug` passed (lint: 0 errors, 38 warnings). On the OnePlus 7 Pro, Home showed `ASR: whisper (detected: hi)` after `el_hinglish.wav` was played from the laptop speaker into an injected unknown-call capture. Debug log: `asr window 5.0s decoded in` 381–1327 ms (typical about 1.1 s). Tiny was pushed and not used. One clear line was `I am CBI officer Sharma, I am speaking with you.` and L reached 65 (tier 1). Not an in-call mic test. Settings on that phone was left on Whisper, protection ON, session POST_INCIDENT.
 
