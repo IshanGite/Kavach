@@ -1,11 +1,14 @@
+# Version-bump PRs are disabled during the hackathon (a surprise Gradle/Kotlin bump can break the demo build).
+# Dependabot SECURITY updates still open PRs. After the event, raise open-pull-requests-limit to re-enable weekly bumps.
 version: 2
 updates:
   - package-ecosystem: gradle
     directory: "/"
     schedule:
       interval: weekly
-    open-pull-requests-limit: 5
+    open-pull-requests-limit: 0
   - package-ecosystem: github-actions
     directory: "/"
     schedule:
       interval: weekly
+    open-pull-requests-limit: 0
