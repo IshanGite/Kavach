@@ -58,9 +58,13 @@ fun audioSourceOf(name: String): Int = when (name) {
 }
 
 const val SAMPLE_RATE = 16_000
+private const val WINDOW_S = 8
+private const val SHORT_WINDOW_S = 5
+private const val STRIDE_S = 4.5
+private const val SHORT_STRIDE_S = 4.0
 
 /**
- * Speakerphone capture during a call from an unknown number only (never for saved contacts). 5 s windows, 1 s overlap, raw audio only in a
+ * Speakerphone capture during a call from an unknown number only (never for saved contacts). 8 s windows every 4.5 s (duplicate words dropped), gain-normalised, raw audio only in a
  * memory ring buffer and never written to disk. The level meter feeds the Debug screen so you can see at a glance whether this phone
  * silences the mic during calls (the spec's top risk, decided by the Day-0 test).
  */
@@ -98,11 +102,13 @@ class AudioCaptureController(
         engine.note("Audio capture started (source=$used, asr=${asr().name})")
         rec.startRecording()
 
-        val window = ShortArray(SAMPLE_RATE * 5)       // ring buffer, 5 s
+        val window = ShortArray(SAMPLE_RATE * WINDOW_S) // ring buffer, 8 s, memory only
         val read = ShortArray(SAMPLE_RATE / 10)         // 100 ms
         var filled = 0
         var sinceChunk = 0
         var busy = false
+        var shortMode = false                           // fallback after a decode overran the stride
+        var prevRaw = ""
         try {
             while (isActive) {
                 val n = rec.read(read, 0, read.size)
@@ -112,25 +118,40 @@ class AudioCaptureController(
                 System.arraycopy(window, n, window, 0, window.size - n)
                 System.arraycopy(read, 0, window, window.size - n, n)
                 filled = minOf(window.size, filled + n)
+                val winLen = SAMPLE_RATE * if (shortMode) SHORT_WINDOW_S else WINDOW_S
+                val stride = (SAMPLE_RATE * if (shortMode) SHORT_STRIDE_S else STRIDE_S).toInt()
                 sinceChunk += n
-                if (sinceChunk >= SAMPLE_RATE * 4 && filled >= window.size && !busy) { // hop 4 s => 1 s overlap
+                if (sinceChunk >= stride && filled >= minOf(winLen, SAMPLE_RATE * SHORT_WINDOW_S) && !busy) {
                     sinceChunk = 0
-                    val snapshot = window.copyOf()
-                    val db = rmsDb(snapshot)
-                    if (db < -60f) continue // silence: do not waste battery on ASR
+                    val len = minOf(winLen, filled)
+                    val snapshot = window.copyOfRange(window.size - len, window.size)
+                    val gained = normaliseGain(snapshot)
+                    snapshot.fill(0)
+                    if (!gained.speechLike) { gained.samples.fill(0); continue } // silence: no ASR, no amplified noise
                     busy = true
                     launch(Dispatchers.Default) {
+                        val t0 = System.currentTimeMillis()
                         try {
                             val active = asr()
-                            val text = active.transcribe(snapshot, SAMPLE_RATE)?.trim()
-                            if (!text.isNullOrEmpty()) {
-                                val lang = active.detectedLanguage.ifBlank { "auto" }
-                                engine.emit(TranscriptChunk(engine.now(), text, lang, Speaker.CALLER))
+                            val raw = active.transcribe(gained.samples, SAMPLE_RATE)?.trim()
+                            val ms = System.currentTimeMillis() - t0
+                            engine.note("mic rms ${"%.0f".format(gained.rmsDb)} dBFS gain +${"%.0f".format(gained.gainDb)} dB decoded in $ms ms")
+                            if (!shortMode && ms > (STRIDE_S * 1000).toLong()) {
+                                shortMode = true
+                                engine.note("Audio: decode slower than stride, falling back to 5 s windows")
+                            }
+                            if (!raw.isNullOrEmpty()) {
+                                val text = dropOverlap(prevRaw, raw)
+                                prevRaw = raw
+                                if (text.isNotEmpty()) {
+                                    val lang = active.detectedLanguage.ifBlank { "auto" }
+                                    engine.emit(TranscriptChunk(engine.now(), text, lang, Speaker.CALLER))
+                                }
                             }
                         } catch (e: CancellationException) { throw e } catch (e: Exception) {
                             engine.note("ASR error: ${e.javaClass.simpleName}")
                         } finally {
-                            snapshot.fill(0) // the 5 s copy does not outlive the window
+                            gained.samples.fill(0) // the window copy does not outlive the decode
                             busy = false
                         }
                     }
