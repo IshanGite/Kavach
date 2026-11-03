@@ -57,15 +57,40 @@ Then Settings > "Seed demo payment history", add one guardian number (a friend's
 Settings > Audio > Whisper (better for Hindi/Marathi, detects the language). Home shows `ASR: whisper (detected: hi)`.
 
 ## Step 4 (optional, recommended): on-phone LLM
-1. Install Termux from GitHub (not the Play Store): https://github.com/termux/termux-app/releases (arm64-v8a APK): `adb install -r <apk>`.
-2. In Termux (type, or Claude drives it via `adb shell input text`):
+Kavach starts Ollama when Protection is switched ON, and again before a model call if the last call could not connect (at most once a minute). You do not open Termux after every reboot. The keyword analyst still scores the call if Ollama is down. Debug log when the ask succeeds: `Asked Termux to start Ollama`.
+
+1. Install Termux from F-Droid or GitHub, not the Play Store (the Play build cannot run this): https://github.com/termux/termux-app/releases (arm64-v8a APK) or https://f-droid.org/packages/com.termux/ then `adb install -r <apk>`. Install Termux before Kavach, or reinstall the Kavach APK afterwards, so Android recognises the permission.
+2. One-time, inside Termux (Kavach cannot write Termux's home directory):
 ```bash
 pkg update -y && pkg upgrade -y
-pkg install -y ollama
+pkg install -y ollama procps
+mkdir -p ~/.termux
+props=~/.termux/termux.properties
+touch "$props"
+grep -v '^allow-external-apps=' "$props" > "$props.tmp" || true
+echo 'allow-external-apps=true' >> "$props.tmp"
+mv "$props.tmp" "$props"
 echo 'pgrep -x ollama >/dev/null || (OLLAMA_HOST=127.0.0.1:11434 OLLAMA_KEEP_ALIVE=24h nohup ollama serve >/dev/null 2>&1 &)' >> ~/.bashrc
 source ~/.bashrc && sleep 4 && ollama pull gemma3:1b
 ```
-3. Battery > Termux > Unrestricted. Open Termux once after every reboot. Kavach finds Ollama at 127.0.0.1:11434 and picks the installed model automatically.
+3. Force-stop Termux so it reloads `termux.properties`, then open it once. From the computer: `adb shell am force-stop com.termux`.
+4. Kavach > Setup > row **Local AI auto-start (Termux)** > **Allow Termux commands** (or `adb shell pm grant com.kavach.app com.termux.permission.RUN_COMMAND`). The same row's button opens Termux. Battery > Termux > Unrestricted.
+5. Home > Protection ON. Kavach talks only to `127.0.0.1:11434`.
+
+### Alternative: Termux:Boot (Ollama at device boot)
+Kavach does not receive `BOOT_COMPLETED`. It starts Ollama when its process is up and Protection is on. To start Ollama at device boot before anyone opens Kavach, install [Termux:Boot](https://github.com/termux/termux-boot) from F-Droid or GitHub (not Play), open Termux:Boot once, then in Termux:
+```bash
+mkdir -p ~/.termux/boot
+cat > ~/.termux/boot/start-ollama << 'EOF'
+#!/data/data/com.termux/files/usr/bin/bash
+pgrep -x ollama >/dev/null || (OLLAMA_HOST=127.0.0.1:11434 OLLAMA_KEEP_ALIVE=24h nohup ollama serve >/dev/null 2>&1 &)
+EOF
+chmod +x ~/.termux/boot/start-ollama
+```
+Exempt Termux:Boot from battery optimisation. The script and Kavach both use `pgrep`, so they will not start two servers.
+
+`adb reverse tcp:11434 tcp:11434` uses the same port for a laptop Ollama. Stop the phone's server first (`pkill ollama` in Termux) or the phone process keeps the port.
+
 Measured on OnePlus 7 Pro: about 3.6 s per scoring call. If it is slower than 8 s on your phone, skip it: the keyword analyst still works.
 
 ## Step 5: make the test audio (no files needed)
@@ -99,6 +124,9 @@ About 1 to 1.5 h with Claude Code driving: 20 min build + models + permissions, 
 - `adb shell pm grant` fails: enable "Disable permission monitoring" (OnePlus) or grant in App info > Permissions.
 - No transcript in Debug during a real call: many phones give the mic silence during calls. Run the Day-0 Audio test; fallbacks are speaker mode, the laptop companion (`companion/listener.py`), or Debug > Send transcript.
 - `Ollama HTTP 404`: fixed (the app now uses whichever model is installed). `ollama list` in Termux to check.
+- Setup row **Local AI auto-start (Termux)** stays "not granted": install Termux before Kavach, or reinstall Kavach, then tap **Allow Termux commands**.
+- Debug log `Termux auto-start failed: SecurityException`: the Run command permission is missing.
+- The log says `Asked Termux to start Ollama` but nothing answers on port 11434: `allow-external-apps=true` is missing, or Termux was not force-stopped after that edit.
 - Never complete a real payment during tests.
 
 ## Report back to Om

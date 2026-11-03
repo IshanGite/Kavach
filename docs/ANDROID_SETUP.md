@@ -18,13 +18,50 @@ JDK 17 for Gradle: `export JAVA_HOME=$(/usr/libexec/java_home -v 17)`.
 2. Install the sideloaded APK: `./gradlew :app:installDebug` (or `adb install -r app/build/outputs/apk/debug/app-debug.apk`).
    Android 13+: App info > ⋮ > **Allow restricted settings** BEFORE enabling the accessibility service and notification access.
 3. **Day-0 audio test first (30 min).** Decides audio option A/B/C/D. See the spec's "Call audio capture: reality check".
-4. Ollama in Termux (from F-Droid, not Play Store):
-   ```
-   pkg install ollama
-   ollama serve &
+4. Ollama in Termux (from F-Droid or GitHub, **not** the Play Store — the Play build is obsolete and rejects `RUN_COMMAND`).
+   Install Termux before Kavach, or reinstall Kavach afterwards, so Android recognises Termux's permission.
+   When Protection is switched ON, Kavach asks Termux to start `ollama serve` on `127.0.0.1:11434` if it is not already running, and again before a model call if the last call failed to connect (at most once a minute). The keyword analyst still scores the call if that fails.
+
+   One-time, **inside Termux** (Kavach cannot write this file). `allow-external-apps=true` is required or Termux ignores the intent:
+
+   ```bash
+   pkg update -y && pkg upgrade -y
+   pkg install -y ollama procps
+   mkdir -p ~/.termux
+   props=~/.termux/termux.properties
+   touch "$props"
+   grep -v '^allow-external-apps=' "$props" > "$props.tmp" || true
+   echo 'allow-external-apps=true' >> "$props.tmp"
+   mv "$props.tmp" "$props"
    ollama pull gemma3:4b        # or gemma3:1b / qwen2.5:3b if it is slow
    ```
-   Exempt Termux from battery optimisation or Android will kill `ollama serve`.
+
+   Termux reads `termux.properties` only at process start. Force-stop it, then open it once:
+
+   ```bash
+   adb shell am force-stop com.termux
+   ```
+
+   In Kavach > Setup, the row **Local AI auto-start (Termux)** requests `com.termux.permission.RUN_COMMAND` (the button opens Termux). From the computer, after Termux is installed:
+
+   ```bash
+   adb shell pm grant com.kavach.app com.termux.permission.RUN_COMMAND
+   ```
+
+   Exempt Termux from battery optimisation or Android will kill `ollama serve`. Debug log line when it works: `Asked Termux to start Ollama`.
+
+   **Alternative: [Termux:Boot](https://github.com/termux/termux-boot)** starts Ollama at device boot, before anyone opens Kavach. Kavach does not listen for `BOOT_COMPLETED`; it starts Ollama when its own process comes up with Protection already on. Install Termux:Boot from F-Droid or GitHub (same rule: not Play), open it once, then in Termux:
+
+   ```bash
+   mkdir -p ~/.termux/boot
+   cat > ~/.termux/boot/start-ollama << 'EOF'
+   #!/data/data/com.termux/files/usr/bin/bash
+   pgrep -x ollama >/dev/null || (OLLAMA_HOST=127.0.0.1:11434 OLLAMA_KEEP_ALIVE=24h nohup ollama serve >/dev/null 2>&1 &)
+   EOF
+   chmod +x ~/.termux/boot/start-ollama
+   ```
+
+   Exempt Termux:Boot from battery optimisation too. Both paths use `pgrep`, so they will not start two servers. `pgrep` comes from `procps` (`pkg install procps`) if the bootstrap does not have it.
 5. Grant in order: Phone/Call log/Contacts, Microphone, Notifications, SMS, "Display over other apps", Notification access, Accessibility service, ignore battery optimisation.
 6. Verify the foreground package names of the UPI apps on THIS phone: `adb shell dumpsys window | grep mCurrentFocus` while each app is open,
    then edit `core/src/main/resources/payment_apps.json` if they differ.
@@ -95,7 +132,9 @@ and [sherpa-onnx-whisper-tiny.tar.bz2](https://github.com/k2-fsa/sherpa-onnx/rel
 ## Dev shortcuts
 
 ```bash
-adb reverse tcp:11434 tcp:11434   # phone's 127.0.0.1:11434 -> laptop Ollama (no Termux needed to start)
+adb reverse tcp:11434 tcp:11434   # phone's 127.0.0.1:11434 -> laptop Ollama
+# Protection ON also starts Termux's ollama on that port when no ollama process is running.
+# Stop the phone server first (`pkill ollama` in Termux) if you want the laptop tunnel instead.
 adb forward tcp:8765 tcp:8765     # laptop -> phone companion listener over USB
 ```
 

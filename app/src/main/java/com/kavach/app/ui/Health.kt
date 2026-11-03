@@ -6,6 +6,7 @@ import android.content.Context
 import android.os.PowerManager
 import android.provider.Settings
 import androidx.core.app.NotificationManagerCompat
+import com.kavach.app.engine.TermuxOllama
 import com.kavach.app.engine.hasPermission
 import com.kavach.app.sense.CallScreeningRole
 import com.kavach.app.sense.KavachAccessibilityService
@@ -35,5 +36,6 @@ object Health {
         Check("Notification access", notificationAccess(ctx), "Read WhatsApp/UPI notifications and detect remote-access apps"),
         Check("Display over other apps", Settings.canDrawOverlays(ctx) || accessibilityEnabled(ctx), "Fallback for drawing the pause screen"),
         Check("Battery optimisation off", batteryExempt(ctx), "Stops Android killing the guardian mid-call"),
+        Check(TermuxOllama.READINESS_LABEL, TermuxOllama.isReady(ctx), TermuxOllama.readinessDetail(ctx)),
     )
 }

@@ -118,6 +118,14 @@ class RepoSecurityTest {
         )
         val requested = Regex("""uses-permission[^>]*android:name="android\.permission\.([A-Z_]+)"""").findAll(text).map { it.groupValues[1] }.toSet()
         assertEquals(emptySet(), requested - allowed, "undocumented permissions requested")
+        // The only non-Android permission: Termux RUN_COMMAND, so Kavach can start on-device Ollama.
+        // Do not add another entry here without a row in docs/DECISIONS.md.
+        val custom = Regex("""<uses-permission[^>]*android:name="([^"]+)"""")
+            .findAll(text)
+            .map { it.groupValues[1] }
+            .filterNot { it.startsWith("android.permission.") }
+            .toSet()
+        assertEquals(setOf("com.termux.permission.RUN_COMMAND"), custom, "undocumented non-Android permissions")
         assertTrue(text.contains("""android:allowBackup="false""""), "allowBackup must be false: the context store holds call data")
         assertFalse(text.contains("""usesCleartextTraffic="true""""), "global cleartext traffic must stay off")
         // Components with intent filters must declare exported explicitly (Android 12+), and only the launcher/services that need it.

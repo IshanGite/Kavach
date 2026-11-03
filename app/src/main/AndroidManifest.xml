@@ -20,9 +20,16 @@
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
     <uses-permission android:name="android.permission.WAKE_LOCK" />
+    <!-- Termux defines this. Lets Kavach start on-device Ollama without the user opening Termux. -->
+    <uses-permission android:name="com.termux.permission.RUN_COMMAND" />
 
     <uses-feature android:name="android.hardware.telephony" android:required="false" />
     <uses-feature android:name="android.hardware.microphone" android:required="false" />
+
+    <!-- Package visibility: know whether Termux is installed and open it from Setup. -->
+    <queries>
+        <package android:name="com.termux" />
+    </queries>
 
     <application
         android:name=".KavachApp"

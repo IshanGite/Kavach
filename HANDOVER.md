@@ -16,6 +16,8 @@ Phone verification steps: `docs/PHONE_TEST_PLAN.md`.
 |---|---|
 | Last updated | 2026-11-04, Guardian floating widget (JVM only) |
 | `main` is | green on this tree: `:core:test` 173 passed; scorecard from that run is 34/34 scams paused, 0/27 normal paused (4 nudges), 61/61 scenarios; **live gemma3:4b was not re-run**; `:app:testDebugUnitTest` 40 passed; APK builds; lint 0 errors, 23 warnings |
+| Last updated | 2026-11-04, Termux Ollama auto-start (not run on a phone) |
+| `main` is | Latest local run on this branch: 173 core tests (live-llm excluded); offline evals 34/34 scams paused and 0/27 normal paused (4 nudges); live gemma3:4b was not re-run; security gates pass; APK builds; lint 0 errors, 38 warnings |
 | Held-out honesty | 20 unseen scenarios run BEFORE tuning: rule layer alone caught 6/12 scams. Those 20 are now used up for tuning; **we still need a fresh held-out set from someone outside the team** |
 | Model latency (laptop, gemma3:4b, terse prompt) | median 5.4 s, p90 6.9 s. The phone will be slower; on the phone expect timeouts and rely on the keyword floor. Measure with Pre-flight |
 | App has been run on a real phone? | **Partly.** OnePlus 7 Pro (Android 12): Simulate, Vosk, and Whisper-base (this session, speaker playback into the mic, not an in-call capture). In-call mic (T2), GPay amount/payee, guardian SMS and Hindi TTS are still unverified. |
@@ -48,7 +50,7 @@ Legend: ✅ built and tested on the laptop · 🟡 built, compiles, **untested o
 | Companion listener (option C): phone side + laptop script | 🟡 / ✅ | `audio/CompanionServer.kt`, `companion/listener.py` | Script tested against a mock; phone side untested |
 | Guardian SMS, TTS (EN/HI), notifications, PDF report | 🟡 | `engine/Platform.kt`, `util/Files.kt` | |
 | **Speech-to-text** | 🟡 | `audio/VoskAsr.kt`, `audio/SherpaWhisperAsr.kt` | Vosk is the default. Settings > Audio > Whisper uses sherpa-onnx 2.0.1, int8 base, 4 threads, `language=""`. Missing Whisper files fall back to Vosk, then Noop. On the OnePlus 7 Pro, base decoded 5.0 s windows in about 0.4–1.3 s (typical ~1.1 s) and Home showed `ASR: whisper (detected: hi)`. Tiny was on disk and was not needed. |
-| Ollama on the phone (Termux) | ⬜ | `docs/ANDROID_SETUP.md` | Not set up. Laptop Ollama over `adb reverse` works for dev |
+| Ollama on the phone (Termux) | 🟡 | `engine/TermuxOllama.kt`, `docs/ANDROID_SETUP.md` | Auto-start via `RUN_COMMAND` is built; the 60 s decision is unit-tested. `allow-external-apps=true` is a one-time Termux step the app cannot do. Not verified on a device. Laptop Ollama over `adb reverse` still works if the phone's `ollama` is not holding port 11434. |
 | Synthetic-voice detector (ONNX) | ⬜ | | Stretch. Weight is 0 when absent; spec says weak signal |
 | Onboarding polish, safe-word capture | ⬜ | | Only a flag exists for the safe word |
 | Demo runbook, pitch outline + judge Q&A | ✅ | `docs/DEMO_RUNBOOK.md`, `docs/PITCH.md` | Pitch slides themselves and the backup video: ⬜ |
@@ -61,13 +63,20 @@ Vosk model-folder resolution, Whisper file layout, and the floating-widget mappi
 **Verified on the OnePlus 7 Pro (speaker into the mic, injected unknown call, not an in-call capture):** Whisper-base int8, 4 threads, decoded 5.0 s windows in 381–1327 ms. Home showed `ASR: whisper (detected: hi)`. Tiny was not needed.
 
 **NOT verified:** overlay drawing over a UPI app, the floating widget on a real screen (bubble, drag, expand, coexistence with the pause screen), accessibility node text of GPay/PhonePe, PHONE_STATE number delivery, mic during a real call (T2), TTS Hindi voice, SMS sending, foreground-service survival, Android 14 microphone-FGS rules.
+**Verified (laptop):** all `core` behaviour, this run's scorecard 34/34 scams paused and 0/27 normal paused (4 nudges), 61/61 scenarios, fuzzed invariants, repo security gates (secrets, audio files, cleartext HTTP, logging, manifest
+permissions/exported/backup), APK assembles with Vosk + sherpa-onnx native libs, Android lint passes (0 errors, 38 warnings), companion script talks to a mock server.
+Vosk model-folder resolution, Whisper file layout, and the Ollama auto-start rate-limit have JVM unit tests. The Termux intent itself was not sent.
+
+**Verified on the OnePlus 7 Pro (speaker into the mic, injected unknown call, not an in-call capture):** Whisper-base int8, 4 threads, decoded 5.0 s windows in 381–1327 ms. Home showed `ASR: whisper (detected: hi)`. Tiny was not needed.
+
+**NOT verified:** overlay drawing over a UPI app, accessibility node text of GPay/PhonePe, PHONE_STATE number delivery, mic during a real call (T2), TTS Hindi voice, SMS sending, foreground-service survival, Android 14 microphone-FGS rules. Termux `RUN_COMMAND` was not sent on a device: the rate-limit is JVM-tested only.
 
 ## Next actions
 
 ### Om (on the spare phone). In this order
 
 1. **Install and set up** (30 min). `./gradlew :app:installDebug`, then follow the in-app Setup screen. On Android 13+ you must first do
-   App info > ⋮ > *Allow restricted settings* or the Accessibility/Notification-access toggles are greyed out. Done when Home shows all ✅.
+   App info > ⋮ > *Allow restricted settings* or the Accessibility/Notification-access toggles are greyed out. Done when Home shows all ✅ except, until step 7, **Local AI auto-start (Termux)**. Keyword-only testing can leave that row red.
 2. **Run Simulate** (10 min). Home > Simulate > play `scam-digital-arrest-english-demo` at 4x. Done when the amber/red pause screen appears with
    reasons, timer and questions, speech is audible, and the Sim log shows a dry-run guardian SMS. This proves overlay + TTS + engine on the device.
    With Protection ON and “Show floating widget” ON (the default), the shield bubble should sit over other apps, expand on an unknown call or a scam-looking notification, and shrink to a bubble while the full-screen pause is up. The pause must still appear before the PIN. Done when that is seen; the widget has no device run yet.
@@ -82,8 +91,7 @@ Vosk model-folder resolution, Whisper file layout, and the floating-widget mappi
 6. **Speech-to-text on the phone.** Push the small Vosk models (`docs/ANDROID_SETUP.md`), force-stop, reopen. Done when Home shows `ASR: vosk on-device ...`,
    a spoken digital-arrest script produces `Transcript ...` lines in the Debug log, and L rises. If Day-0 is SILENT, use option C instead
    (`adb forward tcp:8765 tcp:8765`, Settings token, `python3 companion/listener.py --token <t>`). Set Settings > Language to the script's language before the call.
-7. **Ollama on the phone** (45 min, optional). Termux from F-Droid, `pkg install ollama`, `ollama serve`, pull a small model, exempt Termux from battery optimisation.
-   Measure latency in Debug > Ping. Expect > 8 s on a phone: then rely on the keyword analyst, or try `gemma3:1b`. Meanwhile `adb reverse tcp:11434 tcp:11434` lets the phone use the laptop's Ollama.
+7. **Ollama on the phone** (45 min, optional). One-time, inside Termux: `allow-external-apps=true` in `~/.termux/termux.properties`, then `adb shell am force-stop com.termux` and open Termux once. Setup > **Local AI auto-start (Termux)** > Allow Termux commands. Done when Protection ON writes `Asked Termux to start Ollama` in the Debug log without you opening Termux again, and Debug > Ping returns. If Ping is over 8 s, rely on the keyword analyst. `adb reverse tcp:11434 tcp:11434` still reaches the laptop, but stop the phone's `ollama` first (`pkill ollama`) or it keeps the port. Termux:Boot (`docs/ANDROID_SETUP.md`) is the alternative that starts Ollama at device boot.
 8. **Guardian SMS end to end.** Put a real second number in Settings > Guardians, trigger tier 3 via Debug, confirm the SMS arrives and that replying `HOLD` extends the timer.
 9. **Pre-flight + Live view.** Home > Pre-flight check: all ✅, you have seen and heard the test pause, the model ping is under budget (T15, T16). Home > Live view while running Simulate (T14).
 10. **Rehearse** the 4-minute demo from the spec 3 times using `docs/DEMO_RUNBOOK.md` (fill in its rehearsal log); tune `risk_config.json` if needed, and re-run `./gradlew :core:eval` after every weight change.
@@ -106,6 +114,7 @@ Vosk model-folder resolution, Whisper file layout, and the floating-widget mappi
 | Sideloaded APK: accessibility/notification toggles greyed out (Android 13+) | App info > ⋮ > Allow restricted settings |
 | Android 14 refuses the microphone foreground type if the service starts in the background | Service is started from the UI toggle; falls back to running without the mic type (logged) |
 | Local LLM too slow on the phone | 8 s timeout, keyword analyst keeps working, `gemma3:1b`, cloud fallback (off by default) |
+| Termux ignores the start until `allow-external-apps=true` and Termux is force-stopped once | Setup row **Local AI auto-start (Termux)**. A denied permission or a missing Termux is one Debug line. The keyword analyst still scores. |
 | VoIP call detection is text-heuristic | Tune `VoipCallDetector`; the scammer-on-WhatsApp demo variant may need a manual `Debug > Unknown call` |
 | OEM kills background services (Xiaomi, OnePlus, Samsung) | Battery exemption, autostart permission, lock the app in recents |
 | Floating widget window is untested on a device. A mis-sized window would eat taps outside the card. | The window is a fixed 72 dp bubble or a 308×440 dp card (capped to 62% of the screen), with `FLAG_NOT_FOCUSABLE` and `FLAG_NOT_TOUCH_MODAL`, and never `FLAG_NOT_TOUCHABLE` or `MATCH_PARENT`. While the pause overlay is showing at tier 2+, the mapper forces the bubble. |
@@ -129,6 +138,8 @@ Vosk model-folder resolution, Whisper file layout, and the floating-widget mappi
 | `app/ui` | whoever has the phone in hand; keep PRs small |
 
 ## Session log (newest first, append only)
+
+- **2026-11-04 (Termux Ollama auto-start):** Protection ON sends Termux `RUN_COMMAND` (`com.termux.app.RunCommandService`) to run the fixed loopback `ollama serve` command if `pgrep` finds no ollama. The same ask runs before a model call only after a connect failure, at most once per 60 s. Setup row **Local AI auto-start (Termux)** shows installed/permission state and a button that requests the permission or opens Termux. `allow-external-apps=true` is documented as a one-time Termux step; the app cannot write that file. `RepoSecurityTest` now allows only this one non-Android permission, `com.termux.permission.RUN_COMMAND`. `:core:test` 173 passed, scorecard 34/34 scams paused, 0/27 normal paused (4 nudges). `:app:testDebugUnitTest` 36 passed, including the new rate-limit tests. `:app:assembleDebug` and `:app:lintDebug` passed (0 errors, 38 warnings). Nothing ran on a phone. Next: the one-time Termux property, then Protection ON and a Debug ping.
 
 - **2026-11-03 night (UI overhaul):** Visual pass on the Compose screens only. Home is a protection hero, C/L/R meter and tier chip (Safe / Watching / Caution / Danger), on-device status chips, and a compact readiness list. Pause and nudge keep the same actions, timer, questions and labels, with larger type, 56dp targets, a countdown ring and darker amber so white text clears WCAG AA. Light and dark themes, edge-to-edge. `SimPlayer` and `core/` untouched. `:core:test`, `:app:testDebugUnitTest` (22), `:app:assembleDebug` and `:app:lintDebug` passed (0 errors, 38 warnings). Not installed on a device; Compose previews were not rendered.
 - **2026-11-04 (Kavach Pay):** Mock UPI screen inside the app (`ui/KavachPay.kt`, `ui/KavachPayScreen.kt`), Home entry "Kavach Pay (demo payment app)". Pay emits live `PaymentIntent` OPENED then AMOUNT_ENTERED (payee rides on that stage; there is no `PAYEE_ENTERED`). Tier 2+ uses the existing pause overlay before a mock PIN that keeps only a length. Role-play normal / coerced injects into `c.live`. Coerced (unknown call + dictated `verify.pay@oksbi` + ₹50,000) reaches a pause on an empty baseline through `Orchestrator` and `KavachRuntime` before any PIN event. `:core:test`, `:app:testDebugUnitTest` (27, including 5 new), `:app:assembleDebug`, `:app:lintDebug` passed. Not installed on a phone. A tier 3 pause waits 120s and can text saved guardians. Completing a simulated payment records it on the baseline.

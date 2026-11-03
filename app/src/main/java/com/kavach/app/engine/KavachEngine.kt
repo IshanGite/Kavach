@@ -53,12 +53,18 @@ class DynamicLlmClient(private val settings: Settings, private val status: Mutab
 
     override suspend fun analyze(req: LlmRequest): LlmResponse {
         val s = settings.state.value
+        // Rate-limited. Returns immediately. A missing Termux must not delay or replace the keyword floor.
+        OllamaAutostartHooks.beforeModelCall(s.ollamaUrl)
         val local = OllamaClient(s.ollamaUrl, resolveModel(s.ollamaUrl, s.ollamaModel), timeoutMs = s.llmTimeoutMs.toInt() + 2_000)
         val cloud = s.cloudApiKey.takeIf { it.isNotBlank() }?.let { CloudClient(it) }
         val routing = RoutingClient(local, cloud, { settings.state.value.cloudEnabled }, s.llmTimeoutMs)
         return try {
-            routing.analyze(req).also { status.value = "${it.provider} in ${it.latencyMs} ms" }
+            routing.analyze(req).also {
+                status.value = "${it.provider} in ${it.latencyMs} ms"
+                OllamaAutostartHooks.onModelResult(false)
+            }
         } catch (e: LlmUnavailable) {
+            OllamaAutostartHooks.onModelResult(isOllamaConnectFailure(e))
             status.value = "no model (${e.message}); keyword analyst is covering"
             throw e
         }

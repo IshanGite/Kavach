@@ -46,6 +46,9 @@ class Container(val app: Application) {
     val executor = EffectExecutor(overlay, speaker, sms, notifier)
     val baseline = PrefsBaseline(app)
 
+    /** Asks Termux to start loopback Ollama. Shared by live, sim, Debug, and Pre-flight. */
+    val ollamaAutostart = TermuxOllamaAutostart(app)
+
     /** Fed by real sensors. */
     val live = KavachEngine("live", settings, baseline, executor).also { it.start() }
 
@@ -171,6 +174,8 @@ class Container(val app: Application) {
     }
 
     init {
+        ollamaAutostart.attachLog { live.note(it) }
+        OllamaAutostartHooks.gate = ollamaAutostart.gate
         // Model reads are tens of megabytes and must not run on the main thread.
         reloadAsr()
     }
@@ -212,6 +217,12 @@ class KavachService : Service() {
         }
         if (c.settings.state.value.companionEnabled) c.companion.start()
         c.widget.start()
+        // After the foreground start, so this process is allowed to start Termux's service. Never blocks.
+        try {
+            c.ollamaAutostart.onProtectionOn(c.settings.state.value.ollamaUrl)
+        } catch (e: Exception) {
+            c.live.note("Termux auto-start failed: ${e.javaClass.simpleName}")
+        }
         c.live.warmUpModel()
         c.live.note("Protection ON")
         return START_STICKY

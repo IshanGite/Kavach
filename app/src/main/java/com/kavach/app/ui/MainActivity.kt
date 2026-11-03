@@ -101,6 +101,8 @@ import androidx.lifecycle.compose.LocalLifecycleOwner
 import com.kavach.app.KavachService
 import com.kavach.app.audio.SherpaWhisperAsr
 import com.kavach.app.container
+import com.kavach.app.engine.TermuxOllama
+import com.kavach.app.engine.hasPermission
 import com.kavach.app.sense.CallScreeningRole
 
 class MainActivity : ComponentActivity() {
@@ -497,7 +499,12 @@ fun SetupScreen() {
     val launcher = rememberLauncherForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) { }
     var roleTick by remember { mutableIntStateOf(0) }
     val roleLauncher = rememberLauncherForActivityResult(ActivityResultContracts.StartActivityForResult()) { roleTick++ }
-    val checks = remember(tick, roleTick) { Health.checks(ctx) }
+    var termuxTick by remember { mutableIntStateOf(0) }
+    val termuxPermission = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
+        termuxTick++
+        if (granted) TermuxOllama.openApp(ctx)
+    }
+    val checks = remember(tick, roleTick, termuxTick) { Health.checks(ctx) }
     val callerIdAvailable = remember(tick, roleTick) { CallScreeningRole.isAvailable(ctx) }
     val callerIdHeld = remember(tick, roleTick) { CallScreeningRole.isHeld(ctx) }
     fun open(i: Intent) = ctx.startActivity(i.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
@@ -564,7 +571,36 @@ fun SetupScreen() {
             WideButton("Ignore battery optimisation", icon = Icons.Filled.Shield, onClick = { open(Intent(Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS, pkg)) })
         }
         Section("Status", Icons.Filled.HealthAndSafety) {
-            checks.forEach { StatusLine(it.ok, it.label, it.why) }
+            checks.forEach { ch ->
+                StatusLine(ch.ok, ch.label, ch.why)
+                if (ch.label == TermuxOllama.READINESS_LABEL) {
+                    Text(
+                        "One-time, inside Termux, then force-stop Termux: mkdir -p ~/.termux and put allow-external-apps=true in ~/.termux/termux.properties. Kavach cannot edit that file. Protection ON then starts ollama serve on 127.0.0.1:11434. If that fails, the keyword analyst still scores the call.",
+                        style = MaterialTheme.typography.bodySmall,
+                    )
+                    val termuxInstalled = TermuxOllama.isInstalled(ctx)
+                    val termuxAllowed = ctx.hasPermission(TermuxOllama.RUN_COMMAND_PERMISSION)
+                    WideButton(
+                        text = when {
+                            !termuxInstalled -> "Termux install steps"
+                            !termuxAllowed -> "Allow Termux commands"
+                            else -> "Open Termux"
+                        },
+                        icon = Icons.Filled.Psychology,
+                        onClick = {
+                            try {
+                                when {
+                                    !termuxInstalled -> TermuxOllama.openInstallSteps(ctx)
+                                    !termuxAllowed -> termuxPermission.launch(TermuxOllama.RUN_COMMAND_PERMISSION)
+                                    else -> TermuxOllama.openApp(ctx)
+                                }
+                            } catch (_: Exception) {
+                                // Stay on Setup if Termux is missing or the permission dialog cannot be shown.
+                            }
+                        },
+                    )
+                }
+            }
         }
     }
 }
