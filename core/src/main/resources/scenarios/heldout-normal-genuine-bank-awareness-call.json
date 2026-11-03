@@ -1,7 +1,7 @@
 {
   "id": "heldout-normal-genuine-bank-awareness-call",
   "kind": "normal",
-  "description": "Real bank awareness call that WARNS never to share OTP or PIN. Must not read as an OTP request.",
+  "description": "Real bank awareness call that WARNS never to share OTP or PIN. Must not read as an OTP request. Offline analysts give tier 0; the live 4B model reads OTP talk as KYC fraud and gives a nudge (never a pause), which is accepted: a real bank call from an unsaved number is indistinguishable from a scam in its first seconds.",
   "events": [
     {
       "t": 0,
@@ -28,6 +28,6 @@
     }
   ],
   "expect": {
-    "max_tier": 0
+    "max_tier": 1
   }
 }

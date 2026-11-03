@@ -14,8 +14,10 @@ Phone verification steps: `docs/PHONE_TEST_PLAN.md`.
 
 | | |
 |---|---|
-| Last updated | 2026-11-03, Ishan + Claude |
-| `main` is | green: 138 core tests, 17/17 scams paused, 0/14 normal paused, security gates passing, APK builds, lint clean |
+| Last updated | 2026-11-03 (evening), Ishan + Claude |
+| `main` is | green: 167 core tests; offline evals 30/30 scams paused and 0/24 normal paused; **with the live gemma3:4b in the loop 27/27 and 0/23**; security gates pass; APK builds; lint clean |
+| Held-out honesty | 20 unseen scenarios run BEFORE tuning: rule layer alone caught 6/12 scams. Those 20 are now used up for tuning; **we still need a fresh held-out set from someone outside the team** |
+| Model latency (laptop, gemma3:4b, terse prompt) | median 5.4 s, p90 6.9 s. The phone will be slower; on the phone expect timeouts and rely on the keyword floor. Measure with Pre-flight |
 | App has been run on a real phone? | **NO. Nothing in `app/` has ever executed on a device.** It compiles, lints and builds an APK. Treat every on-device behaviour as unverified until ticked in `docs/PHONE_TEST_PLAN.md`. |
 | Biggest unknown | Whether the demo phone gives us microphone audio during a call (Day-0 test, T2) |
 
@@ -28,9 +30,12 @@ Legend: ✅ built and tested on the laptop · 🟡 built, compiles, **untested o
 | Risk engine, tiers, guards, overrides | ✅ | `core/.../risk` | Spec formula. Deviations in DECISIONS.md |
 | Orchestrator, latching, guardian dedupe, HOLD auth | ✅ | `core/.../orchestrator` | |
 | LLM routing (Ollama, cloud, timeout), keyword floor | ✅ | `core/.../llm`, `analysis` | Live `gemma3:4b` check passed on Mac (5-11 s) |
-| Scenario simulator + 32 scenarios + scorecard | ✅ | `core/.../sim`, `resources/scenarios` | Drives CI evals and the in-app Simulate screen |
+| Scenario simulator + 54 scenarios + scorecard | ✅ | `core/.../sim`, `resources/scenarios` | Drives CI evals and the in-app Simulate screen |
 | Call-state tracker, screen parser, app config | ✅ | `core/.../sense`, `config` | Unit-tested logic; the Android glue around it is 🟡 |
 | Overlay UI (nudge banner, pause screen, timer, 3 questions) | 🟡 | `app/.../ui/OverlayUi.kt`, `OverlayController.kt` | Hindi + English. Accessibility-overlay window with app-overlay fallback |
+| **Live view** (gauge, highlighted transcript, rule chips, bank-signal JSON) for the judges' screen | 🟡 | `app/.../ui/LiveScreen.kt` | Mirror with scrcpy |
+| **Pre-flight check** (real overlay, speech and model tests) | 🟡 | `app/.../ui/PreflightScreen.kt` | Run at T-15 min |
+| Repeated-new-payee rule, per-payee baseline, bank-side signal, LLM grounding, terse prompt | ✅ | `core/.../risk`, `analysis`, `llm` | Decisions 21-31 |
 | Home / Setup / Settings / Debug screens | 🟡 | `app/.../ui` | Debug screen injects events, pings the LLM, copies accessibility dumps |
 | **Simulate screen (backup demo)** | 🟡 | `ui/Screens.kt` `SimPlayer` | Plays any scenario through the real engine + overlay + TTS; SMS is a dry run. **First thing to try on the phone** |
 | Cellular call monitor | 🟡 | `sense/Receivers.kt` | PHONE_STATE receiver + `CallStateTracker`. Needs READ_CALL_LOG for the number |
@@ -45,7 +50,7 @@ Legend: ✅ built and tested on the laptop · 🟡 built, compiles, **untested o
 | Ollama on the phone (Termux) | ⬜ | `docs/ANDROID_SETUP.md` | Not set up. Laptop Ollama over `adb reverse` works for dev |
 | Synthetic-voice detector (ONNX) | ⬜ | | Stretch. Weight is 0 when absent; spec says weak signal |
 | Onboarding polish, safe-word capture | ⬜ | | Only a flag exists for the safe word |
-| Pitch deck, backup video | ⬜ | | |
+| Demo runbook, pitch outline + judge Q&A | ✅ | `docs/DEMO_RUNBOOK.md`, `docs/PITCH.md` | Pitch slides themselves and the backup video: ⬜ |
 
 ## What is verified vs not
 
@@ -77,13 +82,14 @@ PHONE_STATE number delivery, mic during call, TTS Hindi voice, SMS sending, fore
 7. **Ollama on the phone** (45 min, optional). Termux from F-Droid, `pkg install ollama`, `ollama serve`, pull a small model, exempt Termux from battery optimisation.
    Measure latency in Debug > Ping. Expect > 8 s on a phone: then rely on the keyword analyst, or try `gemma3:1b`. Meanwhile `adb reverse tcp:11434 tcp:11434` lets the phone use the laptop's Ollama.
 8. **Guardian SMS end to end.** Put a real second number in Settings > Guardians, trigger tier 3 via Debug, confirm the SMS arrives and that replying `HOLD` extends the timer.
-9. **Rehearse** the 4-minute demo from the spec 3 times; tune `risk_config.json` if needed, and re-run `./gradlew :core:eval` after every weight change.
+9. **Pre-flight + Live view.** Home > Pre-flight check: all ✅, you have seen and heard the test pause, the model ping is under budget (T15, T16). Home > Live view while running Simulate (T14).
+10. **Rehearse** the 4-minute demo from the spec 3 times using `docs/DEMO_RUNBOOK.md` (fill in its rehearsal log); tune `risk_config.json` if needed, and re-run `./gradlew :core:eval` after every weight change.
 
 ### Ishan / Claude
 
 - Review Om's PRs; keep `main` green. Own `core/`, evals, docs, pitch.
-- Add held-out scam/normal scenarios (written without looking at the lexicon) to avoid grading ourselves on our own homework.
-- Per-payee amount baseline; investment-scam rule (see Known gaps).
+- **Write a FRESH held-out scenario set** (or get someone outside the team to): the 20 `heldout-*` scenarios are burned for tuning. Report its first-run result before tuning, as before.
+- Decide the demo language model after measuring the phone (T16): keep 4B terse, or cloud fallback on.
 - Pitch deck, demo script, recorded backup video.
 
 ## Known risks and gotchas
@@ -116,6 +122,12 @@ PHONE_STATE number delivery, mic during call, TTS Hindi voice, SMS sending, fore
 | `app/ui` | whoever has the phone in hand; keep PRs small |
 
 ## Session log (newest first, append only)
+
+- **2026-11-03 evening (Ishan + Claude):** Refinement round. Built a live-model eval (`:core:llmEval`) and a held-out set; first held-out run exposed that the rule layer caught
+  only 6/12 unseen scams, so the lexicon now covers vocabulary classes. The live model exposed two real bugs: a business NAME matching as a dictated payee (clinic got tier 3), and
+  4B terse mode answering risk 75 for benign money talk (fixed by tactic grounding). Added repeated-new-payee rule, per-payee baseline, `BankSignal`, terse prompt (latency median
+  8.3 s -> 5.4 s), Live view, Pre-flight, DEMO_RUNBOOK, PITCH. Live suite with real gemma3:4b: 27/27 scams, 0/23 normal pauses, 1 accepted nudge. Still nothing run on a device.
+  Next: Om, "Next actions > Om, step 1", then the Pre-flight and Live view tests.
 
 - **2026-11-03 (Ishan + Claude):** Built `core` (engine, orchestrator, LLM routing, keyword analyst, report, simulator, 32 scenarios, evals, security gates, CI).
   Built `app/` end to end: services, sensors, overlay, 7 screens, Day-0 audio test, companion server, PDF report. APK builds, lint clean, 138 core tests green.
