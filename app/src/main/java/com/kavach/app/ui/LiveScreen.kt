@@ -77,7 +77,7 @@ private fun chip(code: RuleCode): String = when (code) {
 }
 
 /**
- * The judges' view (mirror it with scrcpy): risk gauge with the 35 / 60 / 80 tier marks, what Kavach is hearing with the evidence
+ * The judges' view (mirror it with scrcpy): risk gauge with the 33 / 60 / 80 tier marks, what Kavach is hearing with the evidence
  * highlighted, why the score is what it is (rule chips with points), and what it decided. Follows whichever engine is active:
  * the real sensors, or a running simulation.
  */
@@ -117,8 +117,8 @@ fun LiveScreen() {
                         val tl = Offset(stroke / 2, stroke / 2)
                         drawArc(Color(0xFF2A3A5C), 135f, 270f, false, tl, sz, style = Stroke(stroke, cap = StrokeCap.Round))
                         drawArc(col, 135f, 270f * (shownRisk / 100f).coerceIn(0f, 1f), false, tl, sz, style = Stroke(stroke, cap = StrokeCap.Round))
-                        // tier marks at 35 / 60 / 80
-                        listOf(35, 60, 80).forEach { m ->
+                        // tier marks at 33 / 60 / 80
+                        listOf(33, 60, 80).forEach { m ->
                             val a = Math.toRadians((135 + 270 * m / 100.0))
                             val rIn = size.width / 2 - stroke - 2.dp.toPx(); val rOut = size.width / 2 + 2.dp.toPx() - 4.dp.toPx()
                             val cx = size.width / 2; val cy = size.height / 2
@@ -131,7 +131,7 @@ fun LiveScreen() {
                         Text(RiskLabels.compact(labelLang, tier, r?.contextScore ?: 0, r?.languageScore, risk), color = Dim, fontSize = 13.sp, fontFamily = FontFamily.Monospace)
                     }
                 }
-                Text("tier marks  35  ·  60  ·  80", color = Dim, fontSize = 12.sp, fontFamily = FontFamily.Monospace)
+                Text("tier marks  33  ·  60  ·  80", color = Dim, fontSize = 12.sp, fontFamily = FontFamily.Monospace)
             }
         }
 

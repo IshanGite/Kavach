@@ -70,6 +70,10 @@ data class Expect(
     /** The pause overlay must already be showing when the PIN screen appears. */
     @SerialName("pause_before_pin") val pauseBeforePin: Boolean? = null,
     @SerialName("message_flagged") val messageFlagged: Boolean? = null,
+    /** Tier of the last decision before the call ends: a scam call must still be showing (at least) this when the caller hangs up. */
+    @SerialName("min_tier_before_call_end") val minTierBeforeCallEnd: Int? = null,
+    /** Tier of the very last decision of the run: nothing may linger after the call and payment are over. */
+    @SerialName("max_final_tier") val maxFinalTier: Int? = null,
 )
 
 object ScenarioLoader {

@@ -27,7 +27,7 @@ class RiskEngineTest {
         assertEquals(10, p.otpOrCollectDuringCall); assertEquals(10, p.syntheticVoice); assertEquals(40, p.numberOnScamList)
         assertEquals(10, p.relatedSmsFlagged)
         val t = RiskConfig().tiers
-        assertEquals(listOf(35, 60, 80), listOf(t.nudge, t.pause, t.pauseGuardian))
+        assertEquals(listOf(33, 60, 80), listOf(t.nudge, t.pause, t.pauseGuardian))
         assertEquals(0.6, RiskConfig().contextWeight); assertEquals(0.4, RiskConfig().languageWeight)
     }
 
@@ -176,7 +176,7 @@ class RiskEngineTest {
     }
 
     @Test
-    fun `tiers follow thresholds 35 60 80 when a payment intent exists`() {
+    fun `tiers follow thresholds 33 60 80 when a payment intent exists`() {
         // With no transcript R = C, so the context points alone walk the tiers.
         val call = unknownCall()
         val c45 = engine.evaluate(session(call, pay(5)))                                              // 20 + 25
@@ -345,5 +345,98 @@ class RiskEngineTest {
         assertEquals(official.contextScore + 10, mobile.contextScore)
         assertTrue(mobile.tier.level >= Tier.PAUSE.level, "mobile R=${mobile.risk} C=${mobile.contextScore} L=${mobile.languageScore}")
         assertTrue(official.tier.level < Tier.PAUSE.level, "160 R=${official.risk} C=${official.contextScore} L=${official.languageScore}")
+    }
+
+    // ---- Evidence floor: real scam language on a live unknown call never reads Safe ----
+
+    private val askText = "hello hello sir awaaz kat rahi hai, mera network bahut kharab hai, please send me 5000 rupees on this number, send me 5000 rupees abhi"
+
+    private fun heard(text: String, vararg more: KavachEvent, call: CallStarted = unknownCall(), nowSec: Int = 12) =
+        session(call, say(5, text), FindingsReady(at(6), KeywordAnalyst.analyze(text)), *more, nowSec = nowSec)
+
+    @Test
+    fun `evidence floor - a highlighted money ask on a live unknown call is at least a nudge, and only a nudge`() {
+        val s = heard(askText)
+        val raw = TestKit.cfg.copy(evidenceFloorEnabled = false)
+        val without = RiskEngine(raw, TestKit.baseline()).evaluate(s)
+        assertEquals(Tier.NONE, without.tier, "premise: C and L alone read Safe (R=${without.risk})")
+        val r = engine.evaluate(s)
+        assertEquals(Tier.NUDGE, r.tier); assertEquals(TestKit.cfg.tiers.nudge, r.risk)
+        assertTrue(Guard.EVIDENCE_FLOORS_AT_NUDGE in r.guards)
+        assertFalse(r.paymentIntent)
+    }
+
+    @Test
+    fun `evidence floor - never above a nudge without payment intent, never changes C or L`() {
+        val s = heard(askText, call = unknownCall(channel = CallChannel.VOIP))
+        val r = engine.evaluate(s)
+        val without = RiskEngine(TestKit.cfg.copy(evidenceFloorEnabled = false), TestKit.baseline()).evaluate(s)
+        assertTrue(r.tier.level <= Tier.NUDGE.level)
+        assertEquals(without.contextScore, r.contextScore); assertEquals(without.languageScore, r.languageScore)
+        assertTrue(r.risk >= without.risk)
+    }
+
+    @Test
+    fun `evidence floor - gone when the call is over`() {
+        val r = engine.evaluate(heard(askText, CallEnded(at(20), 20), nowSec = 25))
+        assertEquals(Tier.NONE, r.tier); assertFalse(Guard.EVIDENCE_FLOORS_AT_NUDGE in r.guards)
+    }
+
+    @Test
+    fun `evidence floor - never for a saved contact`() {
+        val r = engine.evaluate(heard(askText, call = TestKit.savedCall()))
+        assertEquals(Tier.NONE, r.tier); assertFalse(Guard.EVIDENCE_FLOORS_AT_NUDGE in r.guards)
+    }
+
+    @Test
+    fun `evidence floor - junk or thin transcripts are not evidence`() {
+        val junk = "PAPPAPPAPPAPPAPPAPPAPP wa wa wa wa wa send me 5000 rupees"
+        val r = engine.evaluate(heard(junk))
+        assertFalse(Guard.EVIDENCE_FLOORS_AT_NUDGE in r.guards, "junk-heavy window must not floor (C=${r.contextScore} L=${r.languageScore} R=${r.risk})")
+        val thin = engine.evaluate(heard("send me 5000 rupees"))
+        assertFalse(Guard.EVIDENCE_FLOORS_AT_NUDGE in thin.guards)
+    }
+
+    @Test
+    fun `evidence floor - an ungrounded model score or one soft tactic alone is not evidence`() {
+        val llmOnly = TacticsFindings(tactics = Tactics(threatOfArrestOrLegalAction = 0.4, paymentOrTransferRequest = 0.4), llmRisk = 20, evidenceQuotes = listOf("rupees"), source = "llm")
+        val s1 = session(unknownCall(), say(5, askText), FindingsReady(at(6), llmOnly), nowSec = 12)
+        assertFalse(Guard.EVIDENCE_FLOORS_AT_NUDGE in engine.evaluate(s1).guards)
+        val urgencyOnly = "bhaiya abhi main aa raha hoon, thoda ruko, gali ke mod par hoon, abhi do minute mein pahunch jaunga bhai"
+        assertFalse(Guard.EVIDENCE_FLOORS_AT_NUDGE in engine.evaluate(heard(urgencyOnly)).guards)
+        val noQuote = TacticsFindings(tactics = Tactics(paymentOrTransferRequest = 0.65), llmRisk = 8, evidenceQuotes = emptyList(), source = "keywords")
+        val s2 = session(unknownCall(), say(5, askText), FindingsReady(at(6), noQuote), nowSec = 12)
+        assertFalse(Guard.EVIDENCE_FLOORS_AT_NUDGE in engine.evaluate(s2).guards)
+    }
+
+    @Test
+    fun `evidence floor - off switch in config restores plain C and L fusion`() {
+        val off = RiskEngine(TestKit.cfg.copy(evidenceFloorEnabled = false), TestKit.baseline()).evaluate(heard(askText))
+        assertFalse(Guard.EVIDENCE_FLOORS_AT_NUDGE in off.guards)
+    }
+
+    @Test
+    fun `evidence floor - a payment still follows the normal path to a pause`() {
+        val r = engine.evaluate(heard(askText, pay(14, PayStage.AMOUNT_ENTERED, 5000.0, "new.person@ybl"), nowSec = 15))
+        assertTrue(r.paymentIntent)
+        assertTrue(r.tier.level >= Tier.NUDGE.level)
+    }
+
+    @Test
+    fun `evidence floor - nudge disappears at hang-up and a later dismissed payment adds nothing`() {
+        val o = TestKit.orchestrator()
+        o.onEvent(unknownCall())
+        o.onEvent(say(5, askText))
+        val req = o.nextAnalysisRequest(at(6))!!
+        val shown = o.onEvent(FindingsReady(at(6), KeywordAnalyst.analyze(req.windowText)))
+        assertEquals(Tier.NUDGE, shown.tier)
+        assertTrue(shown.effects.any { it is com.kavach.core.orchestrator.Effect.ShowNudge })
+        val ended = o.onEvent(CallEnded(at(30), 30))
+        assertEquals(Tier.NONE, ended.tier)
+        assertTrue(ended.effects.any { it is com.kavach.core.orchestrator.Effect.DismissOverlay })
+        o.onEvent(pay(60, PayStage.OPENED))
+        val dismissed = o.onEvent(PaymentDismissed(at(70)))
+        assertEquals(Tier.NONE, dismissed.tier)
+        assertTrue(dismissed.effects.none { it is com.kavach.core.orchestrator.Effect.ShowNudge })
     }
 }

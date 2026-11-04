@@ -185,8 +185,8 @@ The floating widget shortens the middle label to **Saying**. Tier words: 0 Safe,
 
 | R | Tier enum | Level | UI word | What the orchestrator does |
 |---|---|---|---|---|
-| 0–34 | `NONE` | 0 | Safe | No overlay. |
-| 35–59 | `NUDGE` | 1 | Watching | Banner (`ShowNudge`), at most two reasons. Spoken only if Settings "speak nudges" is on (default off). |
+| 0–32 | `NONE` | 0 | Safe | No overlay. |
+| 33–59 | `NUDGE` | 1 | Watching | Banner (`ShowNudge`), at most two reasons. Spoken only if Settings "speak nudges" is on (default off). |
 | 60–79 | `PAUSE` | 2 | Caution | Full-screen pause, 30 s (`pause_seconds_tier2`), three questions, TTS, Call 1930. |
 | 80–100 | `PAUSE_GUARDIAN` | 3 | Danger | Same pause for 120 s (`pause_seconds_tier3`), plus one guardian SMS if guardians are configured. |
 
@@ -247,7 +247,7 @@ Other config knobs (not point weights):
 
 | Key | Value | Role |
 |---|---|---|
-| `tiers.nudge / pause / pause_guardian` | 35 / 60 / 80 | Tier cuts on R. |
+| `tiers.nudge / pause / pause_guardian` | 33 / 60 / 80 | Tier cuts on R. |
 | `context_weight`, `language_weight` | 0.6, 0.4 | Fusion. |
 | `language_smoothing_runs` | 3 | Window for the L mean. |
 | `min_transcript_words` | 6 | Below this, L stays null. |
@@ -404,7 +404,7 @@ Routes in `MainActivity.kt`: Home, Setup, Settings, Simulate, Day-0 audio test, 
 | Screen | File | User-visible behaviour |
 |---|---|---|
 | **Home** | `MainActivity.kt` `HomeScreen` | Protection hero (Off, then Protected). Tier chip Safe / Watching / Caution / Danger. Bars for Situation, What they're saying, Scam risk. On-device status chips (speech, model, mic dBFS). Readiness list from `Health.checks`. Buttons: Fix now / Review setup, **Kavach Pay (demo payment app)**, Simulate, Live view, Debug, Settings, Audio test, Pre-flight, Complaint report. |
-| **Live view** | `LiveScreen.kt` | Dark judges' screen. Gauge with the 35 / 60 / 80 marks. Transcript with evidence quotes highlighted. Rule chips with points (Unknown caller live, Payment app opened mid-call, …). Follows the real engine or a running simulation. Meant to be mirrored with scrcpy. Also the place the bank-signal JSON is shown for the roadmap slide. |
+| **Live view** | `LiveScreen.kt` | Dark judges' screen. Gauge with the 33 / 60 / 80 marks. Transcript with evidence quotes highlighted. Rule chips with points (Unknown caller live, Payment app opened mid-call, …). Follows the real engine or a running simulation. Meant to be mirrored with scrcpy. Also the place the bank-signal JSON is shown for the roadmap slide. |
 | **Guardian widget** | `GuardianWidget.kt`, `WidgetMapper.kt`, `WidgetController.kt`, `WidgetWindowPolicy` | While protection and "Show floating widget" are on. Collapsed shield in normal life. Expands to a live card on an unknown call or when the tier is ≥ 1. Expands to an alert card for a scam-looking message. Below tier 2, if a payment app is in front, it stays a badged bubble so it does not cover the pay button; a tap can peek. While the full-screen pause is up at tier ≥ 2, the mapper forces the bubble. Card shows caller, elapsed time, last three transcript lines, reasons, score line, Call 1930 (dialer, waits), Call family (first family contact, else the button may be absent), Dismiss, Collapse, recent alerts (8). The widget does not choose the tier. Window policy in the handover: fixed 72 dp bubble or a 308×440 dp card capped to 62% of the screen, `FLAG_NOT_FOCUSABLE` and `FLAG_NOT_TOUCH_MODAL`, never full-screen and never "not touchable". **Not drawn on a device in the sessions that wrote the handover's widget paragraph.** |
 | **Nudge** | `OverlayUi.kt` `NudgeBanner` | Tier 1 banner. Headline such as "This caller may be a scammer. Real police never ask for money on a call." Up to two reasons, optional myth line, **Call {name}** if a guardian or family contact exists, and dismiss. |
 | **Pause** | `OverlayUi.kt` `PauseScreen` | Section 7. |

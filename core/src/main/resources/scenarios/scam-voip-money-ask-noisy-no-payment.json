@@ -1,0 +1,43 @@
+{
+  "id": "scam-voip-money-ask-noisy-no-payment",
+  "kind": "scam",
+  "description": "Unknown VoIP caller on a bad line asks 'send me 5000 rupees' with urgency; no payment app yet. C stays low (VoIP + unknown = 35) and L stays low (one money ask), so R used to read Safe while the transcript highlighted the ask. The evidence floor must show a nudge, and nothing above it without a payment.",
+  "events": [
+    {
+      "t": 0,
+      "type": "call_started",
+      "number": "+91 80012 34567",
+      "in_contacts": false,
+      "channel": "voip"
+    },
+    {
+      "t": 8,
+      "type": "transcript",
+      "text": "hello hello sir awaaz kat rahi hai, mera network bahut kharab hai, haan abhi bahut urgent hai",
+      "speaker": "caller"
+    },
+    {
+      "t": 28,
+      "type": "transcript",
+      "text": "please send me 5000 rupees on this number, send me 5000 rupees abhi, I will explain later, haan sir",
+      "speaker": "caller"
+    },
+    {
+      "t": 50,
+      "type": "transcript",
+      "text": "hello sir are you there, 5000 rupees only, please do it now, baad mein bata dunga",
+      "speaker": "caller"
+    },
+    {
+      "t": 80,
+      "type": "call_ended",
+      "duration": 80
+    }
+  ],
+  "expect": {
+    "min_tier": 1,
+    "max_tier": 1,
+    "min_tier_before_call_end": 1,
+    "max_final_tier": 0
+  }
+}

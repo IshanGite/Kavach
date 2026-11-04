@@ -182,11 +182,15 @@ object KeywordAnalyst {
         val deva = AsrFuzzy.deva(text)
         fun fz(c: AsrFuzzy.Cat) = (fuzzy[c].orEmpty() + deva[c].orEmpty())
         val authority = merge(hits(AUTHORITY, text), fz(AsrFuzzy.Cat.AUTHORITY))
-        val threat = merge(hits(THREAT, text), fz(AsrFuzzy.Cat.THREAT))
-        val urgency = merge(hits(URGENCY, text), fz(AsrFuzzy.Cat.URGENCY))
-        val secrecy = hits(SECRECY, text)
         // "Never share your OTP" is a warning, not a request: strip negated phrases before looking for OTP/PIN asks.
         val advice = withoutWarnings(text)
+        // "Beware of fraudsters who say you will be arrested" warns about a threat; it does not make one.
+        val adviceFuzzy = AsrFuzzy.scan(advice)
+        val adviceDeva = AsrFuzzy.deva(advice)
+        val threat = merge(hits(THREAT, advice), adviceFuzzy[AsrFuzzy.Cat.THREAT].orEmpty() + adviceDeva[AsrFuzzy.Cat.THREAT].orEmpty())
+        val urgency = merge(hits(URGENCY, text), fz(AsrFuzzy.Cat.URGENCY))
+        // A bank's awareness call ("never to share your OTP, PIN or card number with anyone") is the opposite of secrecy pressure.
+        val secrecy = hits(SECRECY, advice)
         var payment = hits(PAYMENT, text)
         var inferred = false
         val remote = hits(REMOTE_OTP, advice)
@@ -195,8 +199,8 @@ object KeywordAnalyst {
         // a money word (or a transfer verb) and either urgency or a card/OTP/KYC mention is an inferred payment ask.
         // Never from a warning sentence, and never without a threat word, so ordinary money talk stays silent.
         if (payment.isEmpty() && threat.isNotEmpty()) {
-            val adv = AsrFuzzy.scan(advice)
-            val advDeva = AsrFuzzy.deva(advice)
+            val adv = adviceFuzzy
+            val advDeva = adviceDeva
             fun has(c: AsrFuzzy.Cat) = adv[c].orEmpty().isNotEmpty() || advDeva[c].orEmpty().isNotEmpty()
             val moneyish = has(AsrFuzzy.Cat.MONEY) || has(AsrFuzzy.Cat.PAYMENT) || AMOUNT.containsMatchIn(advice)
             if (moneyish && (has(AsrFuzzy.Cat.URGENCY) || has(AsrFuzzy.Cat.INSTRUMENT))) {

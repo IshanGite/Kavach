@@ -17,7 +17,7 @@
     "escalating_new_payee_amounts": 10,
     "institution_from_personal_mobile": 10
   },
-  "tiers": { "nudge": 35, "pause": 60, "pause_guardian": 80 },
+  "tiers": { "nudge": 33, "pause": 60, "pause_guardian": 80 },
   "context_weight": 0.6,
   "language_weight": 0.4,
   "language_smoothing_runs": 3,
@@ -41,5 +41,7 @@
   "pause_seconds_tier3": 120,
   "guardian_hold_extend_min": 10,
   "trust_after_dismissals": 2,
-  "keyword_floor_fraction": 0.85
+  "keyword_floor_fraction": 0.85,
+  "evidence_floor_enabled": true,
+  "evidence_floor_tactic_min": 0.5
 }

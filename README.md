@@ -47,7 +47,7 @@ Sense (events) -> Understand (analysts return findings) -> Fuse (RiskEngine: R =
   All weights in `risk_config.json`. Computed instantly; never waits on a model.
 * **L**, the language score, comes from a local LLM (Ollama) reading the last ~90 s of transcript, with a deterministic English/Hindi/Hinglish
   keyword analyst as a floor and a fallback. The LLM interprets; **code decides**.
-* Tiers: `< 35` nothing, `35-59` nudge, `60-79` pause, `>= 80` pause + guardian. Pause tiers require a payment intent. Hard overrides: remote-access
+* Tiers: `< 33` nothing, `33-59` nudge, `60-79` pause, `>= 80` pause + guardian. Pause tiers require a payment intent. Hard overrides: remote-access
   app + payment, or a payee spoken on the call appearing on the pay screen.
 
 ## Evals

@@ -49,6 +49,13 @@ data class RiskConfig(
     @SerialName("trust_after_dismissals") val trustAfterDismissals: Int = 2,
     /** Keyword analyst floor: LLM output can never push language risk below this fraction of the keyword score. */
     @SerialName("keyword_floor_fraction") val keywordFloorFraction: Double = 0.85,
+    /**
+     * Evidence floor: while an unknown call is live and the latest analysis of clean speech found a real tactic with a verified quote,
+     * R is at least the nudge threshold (never a pause by itself). Off = pure C/L fusion.
+     */
+    @SerialName("evidence_floor_enabled") val evidenceFloorEnabled: Boolean = true,
+    /** A tactic counts as real evidence from this score (one lexicon hit scores 0.65, an uncorroborated model score is capped at 0.4). */
+    @SerialName("evidence_floor_tactic_min") val evidenceFloorTacticMin: Double = 0.5,
 ) {
     @Serializable
     data class Points(
@@ -78,7 +85,7 @@ data class RiskConfig(
 
     @Serializable
     data class Tiers(
-        @SerialName("nudge") val nudge: Int = 35,
+        @SerialName("nudge") val nudge: Int = 33,
         @SerialName("pause") val pause: Int = 60,
         @SerialName("pause_guardian") val pauseGuardian: Int = 80,
     )

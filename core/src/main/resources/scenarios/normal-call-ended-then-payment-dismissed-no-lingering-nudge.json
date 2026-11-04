@@ -1,0 +1,51 @@
+{
+  "id": "normal-call-ended-then-payment-dismissed-no-lingering-nudge",
+  "kind": "normal",
+  "description": "Unknown number call about directions ends; minutes later the user opens a payment app for a saved payee and backs out. Nothing lingers: tier 0 throughout, and the evidence floor never outlives the call.",
+  "events": [
+    {
+      "t": 0,
+      "type": "call_started",
+      "number": "+91 70011 98765",
+      "in_contacts": false
+    },
+    {
+      "t": 6,
+      "type": "transcript",
+      "text": "Hello sir, main courier se bol raha hoon, aapka address kaunsi gali mein hai, building ka naam bataiye please",
+      "speaker": "caller"
+    },
+    {
+      "t": 24,
+      "type": "transcript",
+      "text": "Okay sir, theek hai, main das minute mein pahunch jaunga, gate pe aa jaiye, dhanyavaad sir",
+      "speaker": "caller"
+    },
+    {
+      "t": 50,
+      "type": "call_ended",
+      "duration": 50
+    },
+    {
+      "t": 120,
+      "type": "payment",
+      "app": "PhonePe",
+      "stage": "opened"
+    },
+    {
+      "t": 128,
+      "type": "payment",
+      "app": "PhonePe",
+      "stage": "amount_entered",
+      "amount": 200,
+      "payee": "ramesh.kirana@ybl"
+    },
+    {
+      "t": 140,
+      "type": "payment_dismissed"
+    }
+  ],
+  "expect": {
+    "max_tier": 0
+  }
+}

@@ -71,5 +71,10 @@
   "scam-voip-junk-transcript-strong-context",
   "normal-unknown-call-junk-transcript-no-payment",
   "normal-saved-contact-short-real-conversation",
-  "normal-unknown-call-junk-transcript-small-saved-payee"
+  "normal-unknown-call-junk-transcript-small-saved-payee",
+  "scam-voip-money-ask-noisy-no-payment",
+  "scam-voip-turant-paise-bhejo-noisy-no-payment",
+  "normal-saved-contact-says-send-5000-rupees",
+  "normal-unknown-delivery-registered-otp-calm",
+  "normal-call-ended-then-payment-dismissed-no-lingering-nudge"
 ]

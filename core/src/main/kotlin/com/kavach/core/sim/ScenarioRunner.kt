@@ -178,6 +178,12 @@ class ScenarioRunner(
         x.guardianSms?.let { want -> if ((t.guardianSmsCount > 0) != want) f += "guardian SMS sent=${t.guardianSmsCount > 0}, expected $want" }
         x.pauseBeforePin?.let { want -> if ((t.pauseBeforePin == true) != want) f += "pause before PIN screen=${t.pauseBeforePin}, expected $want" }
         x.messageFlagged?.let { want -> if (t.messageFlagged != want) f += "message flagged=${t.messageFlagged}, expected $want" }
+        x.minTierBeforeCallEnd?.let {
+            val end = t.steps.indexOfFirst { st -> st.event is CallEnded }
+            val at = if (end > 0) t.steps[end - 1].decision.tier.level else -1
+            if (at < it) f += "tier just before call end $at < expected min $it"
+        }
+        x.maxFinalTier?.let { val last = t.steps.lastOrNull()?.decision?.tier?.level ?: 0; if (last > it) f += "final tier $last > allowed $it (lingering nudge)" }
         // Universal safety invariant for every normal scenario: never a pause.
         if (s.kind == "normal" && t.maxTier.level >= Tier.PAUSE.level) f += "FALSE POSITIVE: normal scenario reached tier ${t.maxTier.level}"
         return f
@@ -197,7 +203,10 @@ class ScenarioRunner(
 object Scorecard {
     fun render(results: List<Result>): String {
         val gated = results.filter { it.scenario.knownGap == null }
-        val scams = gated.filter { it.scenario.kind == "scam" }
+        val allScams = gated.filter { it.scenario.kind == "scam" }
+        // A scam call that never reaches a payment screen has nothing to pause; it is judged on the nudge row instead.
+        val scams = allScams.filter { it.trace.tierAtPayment != null }
+        val callOnly = allScams.filter { it.trace.tierAtPayment == null }
         val normals = gated.filter { it.scenario.kind == "normal" }
         val caught = scams.count { (it.trace.tierAtPayment?.level ?: 0) >= Tier.PAUSE.level }
         val fpPause = normals.count { it.trace.maxTier.level >= Tier.PAUSE.level }
@@ -210,6 +219,7 @@ object Scorecard {
             appendLine("| Metric | Result | Target |")
             appendLine("|---|---|---|")
             appendLine("| Scams paused before payment | $caught / ${scams.size} | 100% |")
+            if (callOnly.isNotEmpty()) appendLine("| Scam calls with no payment surfaced as a nudge (never a pause) | ${callOnly.count { it.trace.maxTier == Tier.NUDGE }} / ${callOnly.size} | 100% |")
             appendLine("| Normal payments with a pause (tier 2+) | $fpPause / ${normals.size} | 0 (spec: < 1 in 100) |")
             appendLine("| Normal scenarios with any nudge (tier 1) | $fpNudge / ${normals.size} | low |")
             if (leads.isNotEmpty()) appendLine("| Pause shown before PIN screen, lead time | min ${leads.min()} s, median ${leads.sorted()[leads.size / 2]} s | > 0 s |")

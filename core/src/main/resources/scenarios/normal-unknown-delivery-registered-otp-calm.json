@@ -1,0 +1,33 @@
+{
+  "id": "normal-unknown-delivery-registered-otp-calm",
+  "kind": "normal",
+  "description": "Unknown delivery person calmly says the delivery OTP went to the registered number and to show it at the gate. Mentions an OTP but does not ask for it: no tactic hits, tier 0.",
+  "events": [
+    {
+      "t": 0,
+      "type": "call_started",
+      "number": "+91 70011 22334",
+      "in_contacts": false
+    },
+    {
+      "t": 6,
+      "type": "transcript",
+      "text": "Hello sir, I am from the courier company and I am at your gate with the parcel, please come down",
+      "speaker": "caller"
+    },
+    {
+      "t": 24,
+      "type": "transcript",
+      "text": "Your delivery OTP has been sent to the number you registered, just show it to me at the gate, no hurry sir",
+      "speaker": "caller"
+    },
+    {
+      "t": 60,
+      "type": "call_ended",
+      "duration": 60
+    }
+  ],
+  "expect": {
+    "max_tier": 0
+  }
+}

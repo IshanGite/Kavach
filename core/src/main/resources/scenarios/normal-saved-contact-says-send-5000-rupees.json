@@ -1,0 +1,34 @@
+{
+  "id": "normal-saved-contact-says-send-5000-rupees",
+  "kind": "normal",
+  "description": "Saved contact (landlord) on a live call says 'send me 5000 rupees for rent'. The evidence floor is only for unknown callers: stays silent, tier 0.",
+  "events": [
+    {
+      "t": 0,
+      "type": "call_started",
+      "number": "+91 98200 11122",
+      "in_contacts": true,
+      "name": "Landlord Mehta"
+    },
+    {
+      "t": 8,
+      "type": "transcript",
+      "text": "hello beta, ye mahine ka rent baaki hai, please send me 5000 rupees for rent abhi jab time mile, no tension",
+      "speaker": "caller"
+    },
+    {
+      "t": 30,
+      "type": "transcript",
+      "text": "haan theek hai, send me 5000 rupees for rent by tonight, main ghar pe hi hoon, aaram se kar dena",
+      "speaker": "caller"
+    },
+    {
+      "t": 70,
+      "type": "call_ended",
+      "duration": 70
+    }
+  ],
+  "expect": {
+    "max_tier": 0
+  }
+}

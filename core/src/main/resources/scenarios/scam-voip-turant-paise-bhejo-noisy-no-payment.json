@@ -1,0 +1,43 @@
+{
+  "id": "scam-voip-turant-paise-bhejo-noisy-no-payment",
+  "kind": "scam",
+  "description": "Unknown VoIP caller, Hinglish ASR with noise: a single 'turant paise bhejo' ask inside a bad line. No payment screen. Must surface as a nudge (the evidence floor), never a pause.",
+  "events": [
+    {
+      "t": 0,
+      "type": "call_started",
+      "number": "+91 79001 23456",
+      "in_contacts": false,
+      "channel": "voip"
+    },
+    {
+      "t": 6,
+      "type": "transcript",
+      "text": "haan beta main bol raha hoon, awaaz nahi aa rahi, kodichital line bahut kharab hai, suno suno",
+      "speaker": "caller"
+    },
+    {
+      "t": 26,
+      "type": "transcript",
+      "text": "arre suno turant paise bhejo, bahut zaroorat hai, kal wapas kar dunga, line kat rahi hai",
+      "speaker": "caller"
+    },
+    {
+      "t": 48,
+      "type": "transcript",
+      "text": "haan haan abhi bhejo na, main baad mein baat karta hoon, theek hai beta",
+      "speaker": "caller"
+    },
+    {
+      "t": 75,
+      "type": "call_ended",
+      "duration": 75
+    }
+  ],
+  "expect": {
+    "min_tier": 1,
+    "max_tier": 1,
+    "min_tier_before_call_end": 1,
+    "max_final_tier": 0
+  }
+}

@@ -4,6 +4,7 @@ import com.kavach.core.baseline.PaymentBaseline
 import com.kavach.core.config.RiskConfig
 import com.kavach.core.model.CallChannel
 import com.kavach.core.model.ClaimedIdentity
+import com.kavach.core.model.TacticsFindings
 import com.kavach.core.state.IntentKind
 import com.kavach.core.state.SessionState
 import com.kavach.core.text.Extractors
@@ -26,7 +27,11 @@ enum class RuleCode {
 
 enum class HardOverride { REMOTE_ACCESS_WITH_PAYMENT, PAYEE_FROM_CALL }
 
-enum class Guard { NO_PAYMENT_INTENT_CAPS_AT_NUDGE, SAVED_PAYEE_NO_CALL_CAPS_AT_ZERO }
+enum class Guard {
+    NO_PAYMENT_INTENT_CAPS_AT_NUDGE, SAVED_PAYEE_NO_CALL_CAPS_AT_ZERO,
+    /** Raised R to the nudge line: real scam language on a live unknown call must never read as Safe (it never raises a tier past nudge). */
+    EVIDENCE_FLOORS_AT_NUDGE,
+}
 
 data class RuleHit(val code: RuleCode, val points: Int, val detail: String? = null)
 
@@ -156,7 +161,13 @@ class RiskEngine(
             (cfg.contextWeight * context + cfg.languageWeight * language).toInt().coerceIn(0, 100)
         else context
         // On thin evidence language may only add to the context, never pull it down.
-        val risk = if (thin && language != null) maxOf(fused, context) else fused
+        val fusedRisk = if (thin && language != null) maxOf(fused, context) else fused
+
+        // Evidence floor: while an unknown call is live, recognisable speech with real tactic hits (a money ask, a threat, secrecy,
+        // an OTP/remote-access ask, or two softer ones) is never "Safe", even when C and L are both low. It lifts R to the nudge line only,
+        // so no pause without payment intent (guards and tiers above are untouched), and it needs a live call, so it vanishes at hang-up.
+        val floored = cfg.evidenceFloorEnabled && unknown && !thin && latest != null && hasRealEvidence(latest) && fusedRisk < cfg.tiers.nudge
+        val risk = if (floored) cfg.tiers.nudge else fusedRisk
 
         var tier = when {
             risk >= cfg.tiers.pauseGuardian -> Tier.PAUSE_GUARDIAN
@@ -165,6 +176,7 @@ class RiskEngine(
             else -> Tier.NONE
         }
         val guards = mutableListOf<Guard>()
+        if (floored) guards += Guard.EVIDENCE_FLOORS_AT_NUDGE
         val hasIntent = intent != null
 
         // Guard 1: friction on the payment screen only exists when a payment is actually starting.
@@ -202,6 +214,20 @@ class RiskEngine(
         // requires a real hit and ignores an uncorroborated model score, which is capped at 0.4.
         ClaimedIdentity.OTHER -> s.findings.any { it.tactics.authorityImpersonation >= AUTHORITY_CLAIM }
         else -> false
+    }
+
+    /**
+     * The latest analysis (over the rolling window) found real language, not a model's guess: tactic scores are grounded (an uncorroborated model
+     * score is capped at 0.4, below [cfg.evidenceFloorTacticMin]) and at least one evidence quote really appears in the transcript.
+     * A hard tactic alone is enough. Urgency, authority or an emotional story only count together: "abhi" or "officer" alone is everyday speech.
+     */
+    private fun hasRealEvidence(f: TacticsFindings): Boolean {
+        if (f.evidenceQuotes.isEmpty()) return false
+        val t = f.tactics
+        val min = cfg.evidenceFloorTacticMin
+        val hard = maxOf(t.paymentOrTransferRequest, t.threatOfArrestOrLegalAction, t.secrecyOrIsolation, t.remoteAccessOrOtpRequest)
+        if (hard >= min) return true
+        return listOf(t.authorityImpersonation, t.urgencyOrDeadline, t.emotionalEmergency).count { it >= min } >= 2
     }
 
     private fun isOddHour(atMs: Long): Boolean {
