@@ -88,6 +88,8 @@ data class RiskConfig(
         @SerialName("nudge") val nudge: Int = 33,
         @SerialName("pause") val pause: Int = 60,
         @SerialName("pause_guardian") val pauseGuardian: Int = 80,
+        /** Lower warning line used ONLY while an unknown call is live (more sensitive during the call, normal 33 afterwards). */
+        @SerialName("nudge_live_call") val nudgeLiveCall: Int = 28,
     )
 
     companion object {

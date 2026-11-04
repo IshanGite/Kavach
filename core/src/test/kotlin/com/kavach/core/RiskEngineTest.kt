@@ -361,7 +361,7 @@ class RiskEngineTest {
         val without = RiskEngine(raw, TestKit.baseline()).evaluate(s)
         assertEquals(Tier.NONE, without.tier, "premise: C and L alone read Safe (R=${without.risk})")
         val r = engine.evaluate(s)
-        assertEquals(Tier.NUDGE, r.tier); assertEquals(TestKit.cfg.tiers.nudge, r.risk)
+        assertEquals(Tier.NUDGE, r.tier); assertEquals(TestKit.cfg.tiers.nudgeLiveCall, r.risk)
         assertTrue(Guard.EVIDENCE_FLOORS_AT_NUDGE in r.guards)
         assertFalse(r.paymentIntent)
     }

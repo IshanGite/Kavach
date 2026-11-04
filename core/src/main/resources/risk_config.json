@@ -17,7 +17,7 @@
     "escalating_new_payee_amounts": 10,
     "institution_from_personal_mobile": 10
   },
-  "tiers": { "nudge": 33, "pause": 60, "pause_guardian": 80 },
+  "tiers": { "nudge": 33, "pause": 60, "pause_guardian": 80, "nudge_live_call": 28 },
   "context_weight": 0.6,
   "language_weight": 0.4,
   "language_smoothing_runs": 3,
