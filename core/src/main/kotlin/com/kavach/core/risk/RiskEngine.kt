@@ -166,7 +166,7 @@ class RiskEngine(
         // Evidence floor: while an unknown call is live, recognisable speech with real tactic hits (a money ask, a threat, secrecy,
         // an OTP/remote-access ask, or two softer ones) is never "Safe", even when C and L are both low. It lifts R to the nudge line only,
         // so no pause without payment intent (guards and tiers above are untouched), and it needs a live call, so it vanishes at hang-up.
-        val floored = cfg.evidenceFloorEnabled && unknown && !thin && latest != null && hasRealEvidence(latest) && fusedRisk < cfg.tiers.nudge
+        val floored = cfg.evidenceFloorEnabled && unknown && (!thin || (cleanWords >= 3 && speech.cleanFraction >= 0.5)) && latest != null && hasRealEvidence(latest) && fusedRisk < cfg.tiers.nudge
         val risk = if (floored) cfg.tiers.nudge else fusedRisk
 
         var tier = when {

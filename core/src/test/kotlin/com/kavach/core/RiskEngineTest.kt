@@ -390,11 +390,11 @@ class RiskEngineTest {
 
     @Test
     fun `evidence floor - junk or thin transcripts are not evidence`() {
-        val junk = "PAPPAPPAPPAPPAPPAPPAPP wa wa wa wa wa send me 5000 rupees"
+        val junk = "PAPPAPPAPPAPPAPPAPPAPP wa wa wa wa wa Shrisham"
         val r = engine.evaluate(heard(junk))
         assertFalse(Guard.EVIDENCE_FLOORS_AT_NUDGE in r.guards, "junk-heavy window must not floor (C=${r.contextScore} L=${r.languageScore} R=${r.risk})")
         val thin = engine.evaluate(heard("send me 5000 rupees"))
-        assertFalse(Guard.EVIDENCE_FLOORS_AT_NUDGE in thin.guards)
+        assertTrue(Guard.EVIDENCE_FLOORS_AT_NUDGE in thin.guards, "a short clean money ask on a live unknown call must show a warning (decision 38b)")
     }
 
     @Test
