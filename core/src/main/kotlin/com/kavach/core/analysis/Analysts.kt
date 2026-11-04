@@ -45,7 +45,9 @@ class HybridTranscriptAnalyst(
 
     override suspend fun analyze(req: AnalysisRequest): TacticsFindings {
         val kw = KeywordAnalyst.analyze(req.windowText)
-        val fromLlm = llm?.let { askLlm(it, req) }
+        // Junk ASR gives a model nothing to read; asking it only invites a confident "benign" (or an invented threat) about noise.
+        val readable = TranscriptQuality.cleanWordCount(req.windowText) >= MIN_WORDS_FOR_LLM
+        val fromLlm = if (readable) llm?.let { askLlm(it, req) } else null
         val merged = if (fromLlm == null) kw else merge(fromLlm, kw)
         lastSource = merged.source
         return merged
@@ -111,7 +113,10 @@ class HybridTranscriptAnalyst(
         )
     }
 
-    private companion object { const val GROUNDING_SLACK = 10 }
+    private companion object {
+        const val GROUNDING_SLACK = 10
+        const val MIN_WORDS_FOR_LLM = 3
+    }
 }
 
 /** Rules first (instant), LLM second if available; the more suspicious verdict wins. */

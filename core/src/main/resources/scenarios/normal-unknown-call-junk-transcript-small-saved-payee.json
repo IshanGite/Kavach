@@ -1,0 +1,42 @@
+{
+  "id": "normal-unknown-call-junk-transcript-small-saved-payee",
+  "kind": "normal",
+  "description": "Unknown call with a junk transcript while the user pays a small amount to a saved, frequently paid payee. Must not pause.",
+  "events": [
+    {
+      "t": 0,
+      "type": "call_started",
+      "number": "+91 70011 99887",
+      "in_contacts": false
+    },
+    {
+      "t": 10,
+      "type": "transcript",
+      "text": "अचाँ वाँ वाँ वाँ वाँ वा",
+      "speaker": "caller"
+    },
+    {
+      "t": 25,
+      "type": "transcript",
+      "text": "PAPPAPPAPPAPPAPPAPPAPPAPPAPPAPPAPPAPPAPPAPPAPPAPP",
+      "speaker": "caller"
+    },
+    {
+      "t": 40,
+      "type": "payment",
+      "app": "PhonePe",
+      "stage": "opened"
+    },
+    {
+      "t": 46,
+      "type": "payment",
+      "app": "PhonePe",
+      "stage": "amount_entered",
+      "amount": 60,
+      "payee": "milk.dairy@upi"
+    }
+  ],
+  "expect": {
+    "max_tier": 1
+  }
+}

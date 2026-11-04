@@ -1,5 +1,6 @@
 package com.kavach.core.state
 
+import com.kavach.core.analysis.TranscriptQuality
 import com.kavach.core.config.RiskConfig
 import com.kavach.core.model.*
 import com.kavach.core.text.Extractors
@@ -55,6 +56,15 @@ data class SessionState(
 
     fun transcriptWordCount(): Int =
         transcript.sumOf { c -> c.text.trim().split(Regex("""\s+""")).count { it.isNotEmpty() } }
+
+    /**
+     * Recognisable words (and their share of all tokens) in the rolling window that ends at the latest transcript chunk (junk like repeated syllables,
+     * character spam and one stray token does not count). This, not the raw word count, is what makes speech evidence.
+     */
+    fun speechEvidence(windowMs: Long): TranscriptQuality.Stats {
+        val last = transcript.maxOfOrNull { it.atMs } ?: return TranscriptQuality.Stats(0, 0)
+        return TranscriptQuality.stats(transcript.filter { it.atMs >= last - windowMs }.joinToString(" ") { it.text })
+    }
 
     fun transcriptText(windowMs: Long? = null): String {
         val from = if (windowMs == null) Long.MIN_VALUE else nowMs - windowMs

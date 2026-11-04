@@ -67,5 +67,9 @@
   "normal-noisy-asr-shop-rupees",
   "normal-noisy-asr-delivery",
   "normal-noisy-asr-bank-awareness",
-  "normal-noisy-asr-gibberish-alone"
+  "normal-noisy-asr-gibberish-alone",
+  "scam-voip-junk-transcript-strong-context",
+  "normal-unknown-call-junk-transcript-no-payment",
+  "normal-saved-contact-short-real-conversation",
+  "normal-unknown-call-junk-transcript-small-saved-payee"
 ]

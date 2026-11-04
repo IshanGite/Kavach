@@ -18,6 +18,13 @@ data class RiskConfig(
     @SerialName("language_smoothing_runs") val languageSmoothingRuns: Int = 3,
     /** A transcript only "exists" for fusion once it has at least this many words. */
     @SerialName("min_transcript_words") val minTranscriptWords: Int = 6,
+    /**
+     * L may only exist from recognisable speech: at least this many clean words in the rolling window. Below it, L is unknown
+     * (R = C, as with no transcript) unless the rules saw a real tactic, because junk ASR must never read as "benign".
+     */
+    @SerialName("min_clean_words") val minCleanWords: Int = 12,
+    /** ...and those clean words must be at least this share of all tokens, so a few real words inside a pile of junk do not count. */
+    @SerialName("min_clean_fraction") val minCleanFraction: Double = 0.6,
     @SerialName("transcript_window_sec") val transcriptWindowSec: Int = 90,
     @SerialName("analysis_interval_sec") val analysisIntervalSec: Int = 20,
     /** How long a payment intent stays "live" without a fresh payment event. */

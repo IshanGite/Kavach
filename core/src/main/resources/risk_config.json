@@ -22,6 +22,8 @@
   "language_weight": 0.4,
   "language_smoothing_runs": 3,
   "min_transcript_words": 6,
+  "min_clean_words": 12,
+  "min_clean_fraction": 0.6,
   "transcript_window_sec": 90,
   "analysis_interval_sec": 20,
   "payment_intent_ttl_sec": 300,

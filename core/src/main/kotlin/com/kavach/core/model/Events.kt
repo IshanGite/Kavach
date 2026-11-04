@@ -119,6 +119,11 @@ data class Tactics(
     val remoteAccessOrOtpRequest: Double = 0.0,
     val emotionalEmergency: Double = 0.0,
 ) {
+    fun maxScore() = maxOf(
+        authorityImpersonation, threatOfArrestOrLegalAction, urgencyOrDeadline, secrecyOrIsolation,
+        paymentOrTransferRequest, remoteAccessOrOtpRequest, emotionalEmergency,
+    )
+
     fun max(o: Tactics) = Tactics(
         maxOf(authorityImpersonation, o.authorityImpersonation),
         maxOf(threatOfArrestOrLegalAction, o.threatOfArrestOrLegalAction),

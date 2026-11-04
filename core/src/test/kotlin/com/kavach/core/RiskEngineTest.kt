@@ -155,7 +155,7 @@ class RiskEngineTest {
 
     @Test
     fun `fusion uses 0_6 C plus 0_4 L only once an analysis exists`() {
-        val base = session(unknownCall(), pay(5, PayStage.AMOUNT_ENTERED, 50000.0, "n@ybl"), say(6, "this is a long enough sentence to count as transcript"))
+        val base = session(unknownCall(), pay(5, PayStage.AMOUNT_ENTERED, 50000.0, "n@ybl"), say(6, "this is a long enough sentence to count as transcript for the engine tests today"))
         assertNull(engine.evaluate(base).languageScore, "no analysis yet: R must equal C")
         assertEquals(engine.evaluate(base).contextScore, engine.evaluate(base).risk)
         val withL = base.reduce(FindingsReady(at(7), TacticsFindings(llmRisk = 100)), TestKit.cfg)
@@ -167,7 +167,7 @@ class RiskEngineTest {
     @Test
     fun `language score attacks fast and releases slowly`() {
         fun l(vararg risks: Int): Int? {
-            var s = session(unknownCall(), say(1, "this is a long enough sentence to count as transcript"))
+            var s = session(unknownCall(), say(1, "this is a long enough sentence to count as transcript for the engine tests today"))
             risks.forEach { s = s.reduce(FindingsReady(at(10), TacticsFindings(llmRisk = it)), TestKit.cfg) }
             return engine.evaluate(s).languageScore
         }
@@ -194,7 +194,7 @@ class RiskEngineTest {
 
     @Test
     fun `a benign transcript pulls a mid-strength context down (language is real evidence, not decoration)`() {
-        val s = session(unknownCall(), pay(5, PayStage.AMOUNT_ENTERED, 50000.0, "n@ybl"), say(6, "the plumber will come tomorrow at five is that okay"))
+        val s = session(unknownCall(), pay(5, PayStage.AMOUNT_ENTERED, 50000.0, "n@ybl"), say(6, "the plumber will come tomorrow at five so please keep the door open and the water tank clean"))
             .reduce(FindingsReady(at(7), TacticsFindings(llmRisk = 0)), TestKit.cfg)
         val r = engine.evaluate(s)
         assertEquals(65, r.contextScore); assertEquals(39, r.risk); assertEquals(Tier.NUDGE, r.tier)

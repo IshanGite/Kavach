@@ -1,0 +1,37 @@
+{
+  "id": "normal-saved-contact-short-real-conversation",
+  "kind": "normal",
+  "description": "Saved contact calls with a few real words, then the user pays a saved payee. Few words must not matter: nothing above a nudge.",
+  "events": [
+    {
+      "t": 0,
+      "type": "call_started",
+      "number": "+91 98765 43210",
+      "in_contacts": true,
+      "name": "Rahul"
+    },
+    {
+      "t": 8,
+      "type": "transcript",
+      "text": "haan beta theek hai, shaam ko aata hoon",
+      "speaker": "caller"
+    },
+    {
+      "t": 40,
+      "type": "payment",
+      "app": "PhonePe",
+      "stage": "opened"
+    },
+    {
+      "t": 46,
+      "type": "payment",
+      "app": "PhonePe",
+      "stage": "amount_entered",
+      "amount": 1500,
+      "payee": "rahul.son@okhdfcbank"
+    }
+  ],
+  "expect": {
+    "max_tier": 1
+  }
+}

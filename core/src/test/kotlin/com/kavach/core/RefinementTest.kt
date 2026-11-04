@@ -120,7 +120,7 @@ class PromptAndTransportTest {
             com.kavach.core.sim.ScriptedLlmClient { req -> assertEquals(Prompts.TRANSCRIPT_SYSTEM_COMPACT, req.system); """{"tactics":{"authority_impersonation":1},"llm_risk":77}""" },
             TestKit.cfg, compactPrompt = { true },
         )
-        val f = analyst.analyze(com.kavach.core.orchestrator.AnalysisRequest(0, "hello", 1, false, CallChannel.CELLULAR))
+        val f = analyst.analyze(com.kavach.core.orchestrator.AnalysisRequest(0, "hello this is a short ordinary call about a delivery", 1, false, CallChannel.CELLULAR))
         assertTrue(f.source.startsWith("scripted"), "the scripted model's answer was parsed: ${f.source}")
     }
 }

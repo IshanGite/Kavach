@@ -69,4 +69,18 @@ class WhisperLanguagePolicyTest {
         assertFalse(p.isJunk("send 1000000 rupees"))
         assertFalse(p.isJunk("haan"))
     }
+
+    @Test fun junkFilterDropsRealPhoneHallucinations() {
+        // Seen on a real phone at -43 dBFS (faint VoIP audio).
+        assertTrue(p.isJunk("अचाँ वाँ वाँ वाँ वाँ वा"))
+        assertTrue(p.isJunk("PAPPAPPAPPAPPAPPAPPAPPAPPAPPAPPAPPAPPAPPAPPAPPAPP"))
+        assertTrue(p.isJunk("ho jayega ho jayega ho jayega ho jayega"))
+        assertTrue(p.isJunk("a b a b a b"))
+        assertTrue(p.isJunk("the the the the the the quick"))
+        // a lone odd word is not decidable here; the core evidence gate ignores it
+        assertFalse(p.isJunk("Shrisham"))
+        // ordinary speech and long numbers survive
+        assertFalse(p.isJunk("send 100000000 rupees to this account right now please"))
+        assertFalse(p.isJunk("मैं सीबीआई से बोल रहा हूँ अभी पैसे भेजो"))
+    }
 }

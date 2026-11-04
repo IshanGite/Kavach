@@ -139,15 +139,24 @@ class RiskEngine(
         // Smoothing is fast-attack, slow-release: the analysis window is cumulative (the newest run already contains the
         // earlier text), so a plain average only drags a correct alarm down. A spike counts immediately; a dip after a
         // high is damped by the mean of the last few runs.
+        // Evidence gate: L is only trusted over recognisable speech. With too few clean words (junk ASR from faint audio, one stray
+        // word) L stays unknown unless the rules saw a real tactic, so noise can never read as "benign" and lower a scary context.
+        val speech = s.speechEvidence(cfg.transcriptWindowSec * 1000L)
+        val cleanWords = speech.clean
+        val latest = s.findings.lastOrNull()
+        val thin = cleanWords < cfg.minCleanWords || speech.cleanFraction < cfg.minCleanFraction
+        val corroborated = latest != null && latest.tactics.maxScore() >= CORROBORATED_TACTIC
         val language: Int? =
-            if (s.findings.isNotEmpty() && s.transcriptWordCount() >= cfg.minTranscriptWords) {
+            if (latest != null && cleanWords >= cfg.minTranscriptWords && (!thin || corroborated)) {
                 val recent = s.findings.takeLast(cfg.languageSmoothingRuns).map { it.llmRisk }
                 maxOf(recent.last(), recent.average().toInt())
             } else null
 
-        val risk = if (language != null)
+        val fused = if (language != null)
             (cfg.contextWeight * context + cfg.languageWeight * language).toInt().coerceIn(0, 100)
         else context
+        // On thin evidence language may only add to the context, never pull it down.
+        val risk = if (thin && language != null) maxOf(fused, context) else fused
 
         var tier = when {
             risk >= cfg.tiers.pauseGuardian -> Tier.PAUSE_GUARDIAN
@@ -203,5 +212,7 @@ class RiskEngine(
     private companion object {
         const val DAY_MS = 24L * 60 * 60 * 1000
         const val AUTHORITY_CLAIM = 0.5
+        /** A tactic the rule lexicon really matched (one hit scores 0.65, the floor keeps ~0.55); an uncorroborated model score is capped at 0.4. */
+        const val CORROBORATED_TACTIC = 0.5
     }
 }

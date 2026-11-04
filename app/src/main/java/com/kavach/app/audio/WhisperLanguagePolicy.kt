@@ -56,7 +56,14 @@ internal object WhisperLanguagePolicy {
         fun reset() = recent.clear()
     }
 
-    /** True for empty text, character spam ("Rdbjjjjjjjjj") or one token repeated many times. */
+    /** A 2..6 character unit repeated 4+ times in a row ("PAPPAPPAPP...", "ababababab"); digits excluded so "10000000" is fine. */
+    private val UNIT_SPAM = Regex("""([^\d\s]{2,6}?)\1{3,}""")
+
+    /**
+     * True for empty text, character spam ("Rdbjjjjjjjjj"), a repeated substring ("PAPPAPPAPP..."), one token repeated many
+     * times, a one-syllable token making up half the text ("अचाँ वाँ वाँ वाँ वाँ वा"), or a long text with under 3 distinct tokens.
+     * A single odd word ("Shrisham") cannot be told from speech here; the core's evidence gate treats it as too little to count.
+     */
     fun isJunk(text: String?): Boolean {
         val t = text?.trim().orEmpty()
         if (t.isEmpty()) return true
@@ -66,10 +73,14 @@ internal object WhisperLanguagePolicy {
             run = if (t[i] == t[i - 1]) run + 1 else 1
             if (run >= 6 && t[i].isLetter()) return true
         }
+        if (UNIT_SPAM.containsMatchIn(t.lowercase())) return true
         val tokens = t.lowercase().split(Regex("[\\s,.!?।]+")).filter { it.isNotEmpty() }
         if (tokens.size >= 5) {
-            val top = tokens.groupingBy { it }.eachCount().maxOf { it.value }
+            val counts = tokens.groupingBy { it }.eachCount()
+            val top = counts.maxOf { it.value }
             if (top * 10 >= tokens.size * 7) return true
+            if (counts.any { (tok, n) -> tok.length <= 3 && n * 2 >= tokens.size }) return true
+            if (counts.size < 3) return true
         }
         return false
     }

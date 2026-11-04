@@ -1,0 +1,39 @@
+{
+  "id": "normal-unknown-call-junk-transcript-no-payment",
+  "kind": "normal",
+  "description": "Unknown-number call whose faint audio decodes to junk, and no payment at all. Pausing needs payment intent: nothing above a nudge.",
+  "events": [
+    {
+      "t": 0,
+      "type": "call_started",
+      "number": "+91 98111 55443",
+      "in_contacts": false
+    },
+    {
+      "t": 10,
+      "type": "transcript",
+      "text": "अचाँ वाँ वाँ वाँ वाँ वा",
+      "speaker": "caller"
+    },
+    {
+      "t": 30,
+      "type": "transcript",
+      "text": "PAPPAPPAPPAPPAPPAPPAPPAPPAPPAPPAPPAPPAPPAPPAPPAPP",
+      "speaker": "caller"
+    },
+    {
+      "t": 50,
+      "type": "transcript",
+      "text": "Shrisham",
+      "speaker": "caller"
+    },
+    {
+      "t": 120,
+      "type": "call_ended",
+      "duration": 120
+    }
+  ],
+  "expect": {
+    "max_tier": 1
+  }
+}
